@@ -1,3 +1,4 @@
+/// We use this numerical type for all calculations.
 pub type Num = f32;
 
 /// Represents the state of a neuron.
@@ -24,7 +25,6 @@ impl State {
 
 /// The neuron configuration parameters.
 pub struct Config {
-
     /// Rate of recovery.
     a: Num,
 
