@@ -89,16 +89,16 @@ impl State {
     /// Calculate the new state after `dt` ms.
     #[inline(always)]
     pub fn step(self, dt: Num, i_syn: Num, config: &Config) -> State {
-        if self.v >= 30.0 {
+        if self.v < 30.0 {
             State {
-                v: config.c,
-                u: self.u + config.d
+                v: self.v + dt*dv(self.u, self.v, i_syn),
+                u: self.u + dt*du(self.u, self.v, config.a, config.b)
             }
         }
         else {
             State {
-                v: self.v + dt*dv(self.u, self.v, i_syn),
-                u: self.u + dt*du(self.u, self.v, config.a, config.b)
+                v: config.c,
+                u: self.u + config.d
             }
         }
     }
