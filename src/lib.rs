@@ -101,7 +101,7 @@ impl State {
     #[inline(always)]
     pub fn step_1ms(self, i_syn: Num, config: &Config) -> State {
         if self.v < FIRE_POTENTIAL {
-            self.calc(0.5, i_syn/2.0, config).calc(0.5, i_syn/2.0, config)
+            self.calc(0.5, i_syn, config).calc(0.5, i_syn, config)
         }
         else {
             State {
