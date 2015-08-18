@@ -93,13 +93,13 @@ impl State {
         }
     }
 
-    /// Calculate the new state after 1ms. Uses Eulers method for numerical stabilty.
+    /// Calculate the new state after 1ms. Uses first-order Euler method for numerical stabilty.
     /// If second return parameter is true, then the neuron fired.
     fn step_1ms(self, i_syn: Num, config: &Config) -> (State, bool) {
         self.calc(0.5, i_syn, config).calc(0.5, i_syn, config).check_fired(config)
     }
 
-    /// Calculate the state after `dt` ms. Does not use Eulers method.
+    /// Calculate the state after `dt` ms. Does not use first-order Euler method.
     fn _step(self, dt: Num, i_syn: Num, config: &Config) -> (State, bool) {
         self.calc(dt, i_syn, config).check_fired(config)
     }
