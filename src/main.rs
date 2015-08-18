@@ -74,17 +74,34 @@ fn du(u: Num, v: Num, a: Num, b: Num) -> Num {
 
 impl State {
     /// Calculate the state after `dt` ms.
-    /// If second return parameter is true, then the neuron fired.
-    fn step(self, dt: Num, i_syn: Num, config: &Config) -> (State, bool) {
-        let next = State {
+    #[inline(always)]
+    fn calc(self, dt: Num, i_syn: Num, config: &Config) -> State {
+        State {
             v: self.v + dt*dv(self.u, self.v, i_syn),
             u: self.u + dt*du(self.u, self.v, config.a, config.b)
-        };
-        if next.v >= 30.0 {
-            (State { v: config.c, u: next.u + config.d }, true)
-        } else {
-            (next, false)
         }
+    }
+
+    /// Checks if the neuron has fired, updates the state accordingly
+    /// and return `true` in second parameter in this case.
+    #[inline(always)]
+    fn check_fired(self, config: &Config) -> (State, bool) {
+        if self.v >= 30.0 {
+            (State { v: config.c, u: self.u + config.d }, true)
+        } else {
+            (self, false)
+        }
+    }
+
+    /// Calculate the new state after 1ms. Uses Eulers method for numerical stabilty.
+    /// If second return parameter is true, then the neuron fired.
+    fn step_1ms(self, i_syn: Num, config: &Config) -> (State, bool) {
+        self.calc(0.5, i_syn, config).calc(0.5, i_syn, config).check_fired(config)
+    }
+
+    /// Calculate the state after `dt` ms. Does not use Eulers method.
+    fn _step(self, dt: Num, i_syn: Num, config: &Config) -> (State, bool) {
+        self.calc(dt, i_syn, config).check_fired(config)
     }
 }
 
