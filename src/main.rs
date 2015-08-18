@@ -1,12 +1,24 @@
+extern crate gnuplot;
+
 type Num = f32;
 
 /// Represents the state of a neuron.
+#[derive(Copy, Clone)]
 struct State {
     /// membrane potential of neuron (in mV)
     v: Num,
 
     /// recovery variable
     u: Num
+}
+
+impl State {
+    fn new() -> State {
+        State {
+            v: -70.0,
+            u: -14.0
+        }
+    }
 }
 
 /// The neuron configuration parameters.
@@ -73,37 +85,49 @@ fn du(u: Num, v: Num, a: Num, b: Num) -> Num {
 }
 
 impl State {
-    /// Calculate the state after `dt` ms.
+    /// Calculate the new state after `dt` ms.
     #[inline(always)]
-    fn calc(self, dt: Num, i_syn: Num, config: &Config) -> State {
-        State {
-            v: self.v + dt*dv(self.u, self.v, i_syn),
-            u: self.u + dt*du(self.u, self.v, config.a, config.b)
-        }
-    }
-
-    /// Checks if the neuron has fired, updates the state accordingly
-    /// and return `true` in second parameter in this case.
-    #[inline(always)]
-    fn check_fired(self, config: &Config) -> (State, bool) {
+    fn step(self, dt: Num, i_syn: Num, config: &Config) -> State {
         if self.v >= 30.0 {
-            (State { v: config.c, u: self.u + config.d }, true)
-        } else {
-            (self, false)
+            State {
+                v: config.c,
+                u: self.u + config.d
+            }
         }
-    }
-
-    /// Calculate the new state after 1ms. Uses first-order Euler method for numerical stabilty.
-    /// If second return parameter is true, then the neuron fired.
-    fn step_1ms(self, i_syn: Num, config: &Config) -> (State, bool) {
-        self.calc(0.5, i_syn, config).calc(0.5, i_syn, config).check_fired(config)
-    }
-
-    /// Calculate the state after `dt` ms. Does not use first-order Euler method.
-    fn _step(self, dt: Num, i_syn: Num, config: &Config) -> (State, bool) {
-        self.calc(dt, i_syn, config).check_fired(config)
+        else {
+            State {
+                v: self.v + dt*dv(self.u, self.v, i_syn),
+                u: self.u + dt*du(self.u, self.v, config.a, config.b)
+            }
+        }
     }
 }
 
 fn main() {
+    use gnuplot::{Figure, Caption, Color, AxesCommon};
+
+    let config = Config::regular_spiking();
+    let mut neuron = State::new();
+    let mut time = 0.0;
+
+    let mut times = Vec::new();
+    let mut potentials = Vec::new();
+
+    while time < 1_000.0 {
+        // record current state
+        times.push(time);
+        potentials.push(neuron.v);
+
+        // update state
+        let syn_i = if time >= 200.0 && time <= 700.0 { 7.0 } else { 0.0 };
+        neuron = neuron.step(0.5, syn_i, &config).step(0.5, syn_i, &config);
+        time += 1.0;
+    }
+
+    let mut fg = Figure::new();
+    fg.axes2d().
+        set_x_label("time [ms]", &[]).
+        set_y_label("potential [mV]", &[]).
+        lines(times.iter(), potentials.iter(), &[Caption("Neuron potential over time"), Color("black")]);
+    fg.show();
 }
