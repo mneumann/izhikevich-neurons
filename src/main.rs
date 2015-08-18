@@ -16,11 +16,11 @@ fn main() {
         // record current state
         times.push(time);
         potentials.push(neuron.potential());
+        time += 1.0;
 
         // update state
-        let syn_i = if time >= 200.0 && time <= 700.0 { 7.0 } else { 0.0 };
-        neuron = neuron.step(0.5, syn_i, &config).step(0.5, syn_i, &config);
-        time += 1.0;
+        let syn_i = if time >= 200.0 && time <= 700.0 { -7.0 } else { 0.0 };
+        neuron = neuron.step_1ms(syn_i, &config);
     }
 
     let mut fg = Figure::new();

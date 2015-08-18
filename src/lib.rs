@@ -11,6 +11,9 @@ pub struct State {
     u: Num
 }
 
+/// At which potential the neuron fires.
+const FIRE_POTENTIAL : Num = 30.0;
+
 impl State {
     pub fn new() -> State {
         State {
@@ -19,7 +22,7 @@ impl State {
         }
     }
     pub fn potential(&self) -> Num {
-        self.v
+        if self.v < FIRE_POTENTIAL { self.v } else { FIRE_POTENTIAL }
     }
 }
 
@@ -77,7 +80,7 @@ impl Config {
 
 #[inline(always)]
 fn dv(u: Num, v: Num, i_syn: Num) -> Num {
-    0.04 * (v*v) + 5.0 * v + 140.0 - u - i_syn
+    (0.04 * v + 5.0) * v + 140.0 - u - i_syn
 }
 
 #[inline(always)]
@@ -86,14 +89,19 @@ fn du(u: Num, v: Num, a: Num, b: Num) -> Num {
 }
 
 impl State {
-    /// Calculate the new state after `dt` ms.
     #[inline(always)]
-    pub fn step(self, dt: Num, i_syn: Num, config: &Config) -> State {
-        if self.v < 30.0 {
-            State {
-                v: self.v + dt*dv(self.u, self.v, i_syn),
-                u: self.u + dt*du(self.u, self.v, config.a, config.b)
-            }
+    fn calc(self, dt: Num, i_syn: Num, config: &Config) -> State {
+        State {
+            v: self.v + dt*dv(self.u, self.v, i_syn),
+            u: self.u + dt*du(self.u, self.v, config.a, config.b)
+        }
+    }
+
+    /// Calculate the new state after 1 ms.
+    #[inline(always)]
+    pub fn step_1ms(self, i_syn: Num, config: &Config) -> State {
+        if self.v < FIRE_POTENTIAL {
+            self.calc(0.5, i_syn/2.0, config).calc(0.5, i_syn/2.0, config)
         }
         else {
             State {
