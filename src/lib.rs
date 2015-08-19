@@ -24,6 +24,10 @@ impl State {
     pub fn potential(&self) -> Num {
         if self.v < FIRE_POTENTIAL { self.v } else { FIRE_POTENTIAL }
     }
+
+    pub fn recovery(&self) -> Num {
+        self.u
+    }
 }
 
 /// The neuron configuration parameters.
