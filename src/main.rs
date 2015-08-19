@@ -8,9 +8,9 @@ fn main() {
     let config = Config::regular_spiking();
 
     const PARAMS : &'static [(&'static str, Num, &'static str)] = &[
-        ("Neuron 1 [-7 uA current 200..700ms]", -7.0, "blue"),
-        ("Neuron 2 [-2.69 uA current 200..700ms]", -2.69, "red"),
-        ("Neuron 3 [-2.7 uA current 200..700ms]", -2.7, "green")
+        ("Neuron 1 [7 uA current 200..700ms]", 7.0, "blue"),
+        ("Neuron 2 [2.69 uA current 200..700ms]", 2.69, "red"),
+        ("Neuron 3 [2.7 uA current 200..700ms]", 2.7, "green")
     ];
 
     let mut neurons: Vec<_> = PARAMS.iter().map(|_| State::new()).collect();
@@ -37,8 +37,8 @@ fn main() {
     let mut fg = Figure::new();
     {
         let mut diag = fg.axes2d().
-            set_x_label("time [ms]", &[]).
-            set_y_label("potential [mV]", &[]);
+            set_x_label("time (ms)", &[]).
+            set_y_label("membrane potential v (mV)", &[]);
         for (i, &p) in PARAMS.iter().enumerate() {
             diag.lines(times.iter(), potentials[i].iter(), &[Caption(p.0), Color(p.2)]);
         }

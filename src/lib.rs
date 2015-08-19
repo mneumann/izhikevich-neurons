@@ -80,7 +80,7 @@ impl Config {
 
 #[inline(always)]
 fn dv(u: Num, v: Num, i_syn: Num) -> Num {
-    (0.04 * v + 5.0) * v + 140.0 - u - i_syn
+    (0.04 * v + 5.0) * v + 140.0 - u + i_syn
 }
 
 #[inline(always)]
