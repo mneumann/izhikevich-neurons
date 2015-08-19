@@ -14,7 +14,7 @@ fn main() {
     ];
 
     let mut neurons: Vec<_> = PARAMS.iter().map(|_| State::new()).collect();
-    let mut potentials: Vec<_> = PARAMS.iter().map(|_| Vec::new()).collect();
+    let mut states: Vec<_> = PARAMS.iter().map(|_| Vec::new()).collect();
 
     let mut time = 0.0;
     let mut times = Vec::new();
@@ -23,7 +23,7 @@ fn main() {
         // record current state
         times.push(time);
         for (i, &mut neuron) in neurons.iter_mut().enumerate() {
-            potentials[i].push(neuron.potential());
+            states[i].push(neuron);
         }
         time += 1.0;
 
@@ -40,7 +40,7 @@ fn main() {
             set_x_label("time (ms)", &[]).
             set_y_label("membrane potential v (mV)", &[]);
         for (i, &p) in PARAMS.iter().enumerate() {
-            diag.lines(times.iter(), potentials[i].iter(), &[Caption(p.0), Color(p.2)]);
+            diag.lines(times.iter(), states[i].iter().map(|s| s.potential()), &[Caption(p.0), Color(p.2)]);
         }
     }
     fg.show();
