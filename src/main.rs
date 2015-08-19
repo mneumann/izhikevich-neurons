@@ -32,14 +32,29 @@ fn main() {
         }
     }
 
+    {
+        let mut fg = Figure::new();
+        {
+            let mut diag = fg.axes2d().
+                set_x_label("time (ms)", &[]).
+                set_y_label("membrane potential v (mV)", &[]);
+            for (i, &p) in PARAMS.iter().enumerate() {
+                diag.lines(states[i].iter().enumerate().map(|(i, _)| i as f32), states[i].iter().map(|s| s.potential()), &[Caption(p.0), Color(p.2)]);
+            }
+        }
+        fg.show();
+    }
+
+
     let mut fg = Figure::new();
     {
         let mut diag = fg.axes2d().
-            set_x_label("time (ms)", &[]).
-            set_y_label("membrane potential v (mV)", &[]);
+            set_x_label("membrane potential v (mV)", &[]).
+            set_y_label("recovery variable u", &[]);
         for (i, &p) in PARAMS.iter().enumerate() {
-            diag.lines(states[i].iter().enumerate().map(|(i, _)| i as f32), states[i].iter().map(|s| s.potential()), &[Caption(p.0), Color(p.2)]);
+            diag.lines(states[i].iter().map(|s| s.potential()), states[i].iter().map(|s| s.recovery()), &[Caption(p.0), Color(p.2)]);
         }
     }
     fg.show();
+
 }
