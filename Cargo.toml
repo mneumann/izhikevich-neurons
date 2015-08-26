@@ -6,3 +6,7 @@ authors = ["Michael Neumann <mneumann@ntecs.de>"]
 [dependencies.gnuplot]
 
 git = "https://github.com/SiegeLord/RustGnuplot.git"
+
+[dependencies.rand]
+
+version = "0.3"
