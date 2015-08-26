@@ -11,8 +11,8 @@ pub struct State {
     u: Num
 }
 
-/// At which potential the neuron fires.
-const FIRE_POTENTIAL : Num = 30.0;
+/// At which potential the neuron's potential is reset to `c`.
+const RESET_THRESHOLD : Num = 30.0;
 
 impl State {
     pub fn new() -> State {
@@ -22,7 +22,7 @@ impl State {
         }
     }
     pub fn potential(&self) -> Num {
-        if self.v < FIRE_POTENTIAL { self.v } else { FIRE_POTENTIAL }
+        if self.v < RESET_THRESHOLD { self.v } else { RESET_THRESHOLD }
     }
 
     pub fn recovery(&self) -> Num {
@@ -104,7 +104,7 @@ impl State {
     /// Calculate the new state after 1 ms.
     #[inline(always)]
     pub fn step_1ms(self, i_syn: Num, config: &Config) -> State {
-        if self.v < FIRE_POTENTIAL {
+        if self.v < RESET_THRESHOLD {
             self.calc(0.5, i_syn, config).calc(0.5, i_syn, config)
         }
         else {
