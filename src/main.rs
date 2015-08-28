@@ -24,6 +24,7 @@ struct Neuron {
     state: State,
     config: Config,
     i_ext: Num,
+    i_inp: Num,
     pre_synapses: Vec<SynapseId>,
     post_synapses: Vec<SynapseId>,
 }
@@ -46,6 +47,7 @@ impl Network {
             state: State::new(),
             config: config,
             i_ext: 0.0,
+            i_inp: 0.0,
             pre_synapses: Vec::new(),
             post_synapses: Vec::new(),
         };
@@ -117,7 +119,7 @@ fn main() {
 
         // Clear all input currents
         for neuron in network.neurons.iter_mut() {
-            neuron.i_ext = 0.0;
+            neuron.i_inp = 0.0;
         }
 
         // get all synapse input
@@ -129,15 +131,20 @@ fn main() {
                     let syn = &network.synapses[syn_fired as usize];
                     (syn.weight, syn.post_neuron)
                 };
-                network.neurons[post_neuron as usize].i_ext += weight; 
+                network.neurons[post_neuron as usize].i_inp += weight; 
             }
             current_spikes.clear();
         }
 
         // update state
         for (i, mut neuron) in network.neurons.iter_mut().enumerate() {
-            let mut syn_i = if time_step >= 200 && time_step <= 700 { PARAMS[i].1 } else { 0.0 };
-            syn_i += neuron.i_ext;
+            if time_step >= 200 && time_step <= 700 {
+                neuron.i_ext = PARAMS[i].1;
+            } else {
+                neuron.i_ext = 0.0;
+            }
+
+            let syn_i = neuron.i_ext + neuron.i_inp;
 
             let (new_state, fired) = neuron.state.step_1ms(syn_i, &neuron.config);
             neuron.state = new_state;
