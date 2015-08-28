@@ -8,9 +8,9 @@ fn main() {
     let config = Config::regular_spiking();
 
     const PARAMS : &'static [(&'static str, Num, &'static str)] = &[
-        ("Neuron 1 [7 uA current 200..700ms]", 7.0, "blue"),
-        ("Neuron 2 [2.69 uA current 200..700ms]", 2.69, "red"),
-        ("Neuron 3 [2.7 uA current 200..700ms]", 2.7, "green")
+        ("Neuron 1 [7 pA current 200..700ms]", 7.0, "blue"),
+        ("Neuron 2 [2.69 pA current 200..700ms]", 2.69, "red"),
+        ("Neuron 3 [2.7 pA current 200..700ms]", 2.7, "green")
     ];
 
     let mut neurons: Vec<_> = PARAMS.iter().map(|_| State::new()).collect();
