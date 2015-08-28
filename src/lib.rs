@@ -103,15 +103,15 @@ impl State {
 
     /// Calculate the new state after 1 ms.
     #[inline(always)]
-    pub fn step_1ms(self, i_syn: Num, config: &Config) -> State {
+    pub fn step_1ms(self, i_syn: Num, config: &Config) -> (State, bool) {
         if self.v < RESET_THRESHOLD {
-            self.calc(0.5, i_syn, config).calc(0.5, i_syn, config)
+            (self.calc(0.5, i_syn, config).calc(0.5, i_syn, config), false)
         }
         else {
-            State {
+            (State {
                 v: config.c,
                 u: self.u + config.d
-            }
+            }, true)
         }
     }
 }
