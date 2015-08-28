@@ -12,11 +12,11 @@ type Delay = u8;
 const MAX_DELAY: u8 = 40;
 
 struct Synapse {
-    pre_neuron: NeuronId,
+    _pre_neuron: NeuronId,
     post_neuron: NeuronId,
     delay: Delay,
     weight: Num,
-    last_spike: TimeStep,
+    _last_spike: TimeStep,
     // ... learning parameters
 }
 
@@ -63,11 +63,11 @@ impl Network {
         assert!(delay <= MAX_DELAY);
 
         let synapse = Synapse {
-            pre_neuron: pre_neuron,
+            _pre_neuron: pre_neuron,
             post_neuron: post_neuron,
             delay: delay, 
             weight: weight,
-            last_spike: 0, // XXX
+            _last_spike: 0, // XXX
         };
         let synapse_id = self.synapses.len() as u32;
 
@@ -80,12 +80,10 @@ impl Network {
 }
 
 fn main() {
-    let config = Config::regular_spiking();
-
-    const PARAMS : &'static [(&'static str, Num, &'static str)] = &[
-        ("Neuron 1 [7 pA current 200..700ms]", 7.0, "blue"),
+    const PARAMS : &'static [(&'static str, &'static str)] = &[
+        ("Neuron 1 [7 pA current 200..700ms]", "blue"),
         //("Neuron 2 [2.69 pA current 200..700ms]", 2.69, "red"),
-        ("Neuron 2 [0.0 pA current 200..700ms]", 0.0, "red"),
+        ("Neuron 2 [0.0 pA current 200..700ms]", "red"),
         //("Neuron 3 [2.7 pA current 200..700ms]", 2.7, "green")
     ];
 
@@ -94,6 +92,11 @@ fn main() {
     let n1 = network.create_neuron(Config::regular_spiking());
     let n2 = network.create_neuron(Config::regular_spiking());
     //let n3 = network.create_neuron(Config::regular_spiking());
+
+    let external_inputs: &[(NeuronId, TimeStep, Num)] = &[
+        (n1, 200, 7.0),
+        (n1, 701, 0.0)
+    ];
 
     // We use a cyclic buffer
     // We use (time_step % MAX_DELAY) as index into the futures_spike array
@@ -135,15 +138,15 @@ fn main() {
             }
             current_spikes.clear();
         }
+        // set external inputs
+        for &(n_id, at, current) in external_inputs {
+            if time_step == at {
+                network.neurons[n_id as usize].i_ext = current;
+            }
+        }
 
         // update state
         for (i, mut neuron) in network.neurons.iter_mut().enumerate() {
-            if time_step >= 200 && time_step <= 700 {
-                neuron.i_ext = PARAMS[i].1;
-            } else {
-                neuron.i_ext = 0.0;
-            }
-
             let syn_i = neuron.i_ext + neuron.i_inp;
 
             let (new_state, fired) = neuron.state.step_1ms(syn_i, &neuron.config);
@@ -165,7 +168,7 @@ fn main() {
                 set_x_label("time (ms)", &[]).
                 set_y_label("membrane potential v (mV)", &[]);
             for (i, &p) in PARAMS.iter().enumerate() {
-                diag.lines(states[i].iter().enumerate().map(|(i, _)| i as f32), states[i].iter().map(|s| s.potential()), &[Caption(p.0), Color(p.2)]);
+                diag.lines(states[i].iter().enumerate().map(|(i, _)| i as f32), states[i].iter().map(|s| s.potential()), &[Caption(p.0), Color(p.1)]);
             }
         }
         fg.show();
