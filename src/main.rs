@@ -141,16 +141,18 @@ impl Network {
 
     fn update_synapse_weights(&mut self, min_syn_weight: Num, max_syn_weight: Num, eff_d_decay: Num) {
         for syn in self.synapses.iter_mut() {
-            let mut new_weight = syn.weight + syn.eff_d;
+            let new_weight = syn.weight + syn.eff_d;
 
             // Restrict synapse weight min_syn_weight .. max_syn_weight
             if new_weight < min_syn_weight {
-                new_weight = min_syn_weight;
+                syn.weight = min_syn_weight;
             }
             else if new_weight > max_syn_weight {
-                new_weight = max_syn_weight;
+                syn.weight = max_syn_weight;
             }
-            syn.weight = new_weight;
+            else {
+                syn.weight = new_weight;
+            }
             syn.eff_d *= eff_d_decay; // decay
         }
     }
