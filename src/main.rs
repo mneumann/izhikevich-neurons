@@ -11,11 +11,18 @@ type Delay = u8;
 
 const MAX_DELAY: u8 = 40;
 
+const STDP_FIRE_RESET: Num = 0.1;
+const STDP_DECAY: Num = 0.95;
+
 struct Synapse {
-    _pre_neuron: NeuronId,
+    pre_neuron: NeuronId,
     post_neuron: NeuronId,
     delay: Delay,
     weight: Num,
+
+    // efficiacy derivative used for STDP
+    eff_d: Num,
+
     _last_spike: TimeStep,
     // ... learning parameters
 }
@@ -25,6 +32,22 @@ struct Neuron {
     config: Config,
     i_ext: Num,
     i_inp: Num,
+
+    // XXX: Have a list of `active` synapses, which are active
+    // once a neuron fires on it. The `active` synapses track
+    // themselves, once they become inactive. Use a similar
+    // `decay` process as for STDP for the action potential,
+    // so that the shape of the spike is less sharp. A high
+    // decay rate can simulate the old behaviour.
+
+    // Spike-Time Dependent Plasticity
+    //
+    // when a neuron fires, we set this value to STDP_FIRE_RESET
+    // (0.1 for example), and during every time-step we decay
+    // it by STDP_DECAY e.g. 0.95.
+    stdp: Num,
+
+    // XXX: Rename to Connection and incoming/outgoing?
     pre_synapses: Vec<SynapseId>,
     post_synapses: Vec<SynapseId>,
 }
@@ -46,6 +69,7 @@ impl Network {
         let neuron = Neuron {
             state: State::new(),
             config: config,
+            stdp: 0.0,
             i_ext: 0.0,
             i_inp: 0.0,
             pre_synapses: Vec::new(),
@@ -63,10 +87,11 @@ impl Network {
         assert!(delay <= MAX_DELAY);
 
         let synapse = Synapse {
-            _pre_neuron: pre_neuron,
+            pre_neuron: pre_neuron,
             post_neuron: post_neuron,
             delay: delay, 
             weight: weight,
+            eff_d: 0.0,
             _last_spike: 0, // XXX
         };
         let synapse_id = self.synapses.len() as u32;
@@ -77,6 +102,43 @@ impl Network {
 
         return synapse_id;
     }
+
+
+    fn update_state(&mut self, time_step: TimeStep, future_spikes: &mut Vec<Vec<SynapseId>>) {
+        //for (i, mut neuron) in network.neurons.iter_mut().enumerate() {
+        for i in 0 .. self.neurons.len() {
+            let syn_i = self.neurons[i].i_ext + self.neurons[i].i_inp;
+
+            let (new_state, fired) = self.neurons[i].state.step_1ms(syn_i, &self.neurons[i].config);
+            self.neurons[i].state = new_state;
+
+            // decay STDP
+            self.neurons[i].stdp *= STDP_DECAY;
+
+            if fired {
+                // Reset the neurons STDP to a high value.
+                self.neurons[i].stdp = STDP_FIRE_RESET;
+
+                println!("Neuron {} fired at {} ms", i, time_step);
+                for &syn_id in self.neurons[i].post_synapses.iter() {
+                    let future = time_step + self.synapses[syn_id as usize].delay as TimeStep;
+                    future_spikes[future as usize % MAX_DELAY as usize].push(syn_id);
+                }
+
+                // Excite the synapses that might have led to the firing of the underlying neuron.
+                // We do this by adding the synapses pre_neuron's STDP value to the synapses eff_d
+                // (efficacy derivative) value.
+                //
+                // We do not update the synapses weight value immediatly, but only once very while
+                // (TODO), so that STDP reflects more LTP (Long Term Potentiation).
+                for &syn_id in self.neurons[i].pre_synapses.iter() {
+                    let stdp = self.neurons[self.synapses[syn_id as usize].pre_neuron as usize].stdp;
+                    self.synapses[syn_id as usize].eff_d += stdp;
+                }
+            }
+        }
+    }
+
 }
 
 fn main() {
@@ -138,6 +200,7 @@ fn main() {
             }
             current_spikes.clear();
         }
+
         // set external inputs
         for &(n_id, at, current) in external_inputs {
             if time_step == at {
@@ -145,20 +208,7 @@ fn main() {
             }
         }
 
-        // update state
-        for (i, mut neuron) in network.neurons.iter_mut().enumerate() {
-            let syn_i = neuron.i_ext + neuron.i_inp;
-
-            let (new_state, fired) = neuron.state.step_1ms(syn_i, &neuron.config);
-            neuron.state = new_state;
-            if fired {
-                println!("Neuron {} fired at {} ms", i, time_step);
-                for &syn_id in neuron.post_synapses.iter() {
-                    let future = time_step + network.synapses[syn_id as usize].delay as TimeStep;
-                    future_spikes[future as usize % MAX_DELAY as usize].push(syn_id);
-                }
-            }
-        }
+        network.update_state(time_step, &mut future_spikes);
     }
 
     {
