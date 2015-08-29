@@ -139,6 +139,22 @@ impl Network {
         }
     }
 
+    fn update_synapse_weights(&mut self, min_syn_weight: Num, max_syn_weight: Num, eff_d_decay: Num) {
+        for syn in self.synapses.iter_mut() {
+            let mut new_weight = syn.weight + syn.eff_d;
+
+            // Restrict synapse weight min_syn_weight .. max_syn_weight
+            if new_weight < min_syn_weight {
+                new_weight = min_syn_weight;
+            }
+            else if new_weight > max_syn_weight {
+                new_weight = max_syn_weight;
+            }
+            syn.weight = new_weight;
+            syn.eff_d *= eff_d_decay; // decay
+        }
+    }
+
 }
 
 fn main() {
@@ -168,8 +184,8 @@ fn main() {
     let _ = network.connect(n1, n2, 5, 7.0);
     let _ = network.connect(n1, n2, 2, 7.0);
     let _ = network.connect(n1, n2, 2, 7.0);
-    let _ = network.connect(n2, n2, 40, 17.0);
-    let _ = network.connect(n2, n2, 40, 7.0);
+    let _ = network.connect(n2, n2, 20, 7.0);
+    let _ = network.connect(n2, n2, 20, 7.0);
 
     let mut states: Vec<_> = PARAMS.iter().map(|_| Vec::new()).collect();
 
@@ -192,11 +208,17 @@ fn main() {
             let current_spikes = &mut future_spikes[(time_step % (MAX_DELAY as TimeStep)) as usize];
             for &syn_fired in current_spikes.iter() {
                 println!("time: {}. input from synapse: {}", time_step, syn_fired); 
-                let (weight, post_neuron) = {
+                let (weight, pre_neuron, post_neuron) = {
                     let syn = &network.synapses[syn_fired as usize];
-                    (syn.weight, syn.post_neuron)
+                    (syn.weight, syn.pre_neuron, syn.post_neuron)
                 };
                 network.neurons[post_neuron as usize].i_inp += weight; 
+
+                // whenever a spike arrives here at it's post_neuron, this means, that
+                // the pre-neuron fired some time ago (delay time-steps). It can be the 
+                // case that the post_neuron has fired ealier, in which case we have to
+                // depress the synapse according to the STDP rule.
+                network.synapses[syn_fired as usize].eff_d += network.neurons[pre_neuron as usize].stdp - network.neurons[post_neuron as usize].stdp;
             }
             current_spikes.clear();
         }
@@ -209,6 +231,11 @@ fn main() {
         }
 
         network.update_state(time_step, &mut future_spikes);
+
+        if time_step % 500 == 0 {
+            // Update synapse weights every 10 ms
+            network.update_synapse_weights(0.0, 10.0, 0.9);
+        }
     }
 
     {
