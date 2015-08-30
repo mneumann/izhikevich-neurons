@@ -23,7 +23,6 @@ struct Synapse {
     // efficiacy derivative used for STDP
     eff_d: Num,
 
-    _last_spike: TimeStep,
     // ... learning parameters
 }
 
@@ -92,7 +91,6 @@ impl Network {
             delay: delay, 
             weight: weight,
             eff_d: 0.0,
-            _last_spike: 0, // XXX
         };
         let synapse_id = self.synapses.len() as u32;
 
@@ -156,49 +154,32 @@ impl Network {
             syn.eff_d *= eff_d_decay; // decay
         }
     }
-
 }
 
-fn main() {
-    const PARAMS : &'static [(&'static str, &'static str)] = &[
-        ("Neuron 1 [7 pA current 200..700ms]", "blue"),
-        //("Neuron 2 [2.69 pA current 200..700ms]", 2.69, "red"),
-        ("Neuron 2 [0.0 pA current 200..700ms]", "red"),
-        //("Neuron 3 [2.7 pA current 200..700ms]", 2.7, "green")
-    ];
-
-    let mut network = Network::new();
-
-    let n1 = network.create_neuron(Config::regular_spiking());
-    let n2 = network.create_neuron(Config::regular_spiking());
-    //let n3 = network.create_neuron(Config::regular_spiking());
-
-    let external_inputs: &[(NeuronId, TimeStep, Num)] = &[
-        (n1, 200, 7.0),
-        (n1, 701, 0.0)
-    ];
+struct Simulator {
+    current_time_step: TimeStep,
+    max_delay: usize,
 
     // We use a cyclic buffer
-    // We use (time_step % MAX_DELAY) as index into the futures_spike array
-    let mut future_spikes: Vec<Vec<SynapseId>> = (0..MAX_DELAY as usize).map(|_| Vec::new()).collect();
+    // We use (time_step % max_delay) as index into the futures_spike array
+    future_spikes: Vec<Vec<SynapseId>>,
+}
 
-    let _ = network.connect(n1, n2, 10, 7.0);
-    let _ = network.connect(n1, n2, 5, 7.0);
-    let _ = network.connect(n1, n2, 2, 7.0);
-    let _ = network.connect(n1, n2, 2, 7.0);
-    let _ = network.connect(n2, n2, 20, 7.0);
-    let _ = network.connect(n2, n2, 20, 7.0);
-
-    let mut states: Vec<_> = PARAMS.iter().map(|_| Vec::new()).collect();
-
-    let mut time_step: TimeStep = 0;
-
-    while time_step <= 1_000 {
-        // record current state
-        for (i, neuron) in network.neurons.iter().enumerate() {
-            states[i].push(neuron.state);
+impl Simulator {
+    fn new(max_delay: usize) -> Simulator {
+        Simulator {
+            current_time_step: 0,
+            max_delay: max_delay,
+            future_spikes: (0..(max_delay+1)).map(|_| Vec::new()).collect(),
         }
-        time_step += 1;
+    }
+
+    fn current_time_step(&self) -> TimeStep {
+        self.current_time_step
+    }
+        
+    fn step(&mut self, network: &mut Network, external_inputs: &[(NeuronId, TimeStep, Num)]) {
+        let time_step = self.current_time_step;
 
         // Clear all input currents
         for neuron in network.neurons.iter_mut() {
@@ -207,7 +188,7 @@ fn main() {
 
         // get all synapse input
         {
-            let current_spikes = &mut future_spikes[(time_step % (MAX_DELAY as TimeStep)) as usize];
+            let current_spikes = &mut self.future_spikes[(time_step % (self.max_delay as TimeStep)) as usize];
             for &syn_fired in current_spikes.iter() {
                 println!("time: {}. input from synapse: {}", time_step, syn_fired); 
                 let (weight, pre_neuron, post_neuron) = {
@@ -232,9 +213,51 @@ fn main() {
             }
         }
 
-        network.update_state(time_step, &mut future_spikes);
+        network.update_state(time_step, &mut self.future_spikes);
 
-        if time_step % 500 == 0 {
+        self.current_time_step += 1;
+    }
+}
+
+fn main() {
+    const PARAMS : &'static [(&'static str, &'static str)] = &[
+        ("Neuron 1 [7 pA current 200..700ms]", "blue"),
+        //("Neuron 2 [2.69 pA current 200..700ms]", 2.69, "red"),
+        ("Neuron 2 [0.0 pA current 200..700ms]", "red"),
+        //("Neuron 3 [2.7 pA current 200..700ms]", 2.7, "green")
+    ];
+
+    let mut network = Network::new();
+
+    let n1 = network.create_neuron(Config::regular_spiking());
+    let n2 = network.create_neuron(Config::regular_spiking());
+    //let n3 = network.create_neuron(Config::regular_spiking());
+
+    let external_inputs: &[(NeuronId, TimeStep, Num)] = &[
+        (n1, 200, 7.0),
+        (n1, 701, 0.0)
+    ];
+
+
+    let _ = network.connect(n1, n2, 10, 7.0);
+    let _ = network.connect(n1, n2, 5, 7.0);
+    let _ = network.connect(n1, n2, 2, 7.0);
+    let _ = network.connect(n1, n2, 2, 7.0);
+    let _ = network.connect(n2, n2, 20, 7.0);
+    let _ = network.connect(n2, n2, 20, 7.0);
+
+    let mut states: Vec<_> = PARAMS.iter().map(|_| Vec::new()).collect();
+    let mut sim = Simulator::new(MAX_DELAY as usize);
+
+    while sim.current_time_step() <= 1_000 {
+        // record current state
+        for (i, neuron) in network.neurons.iter().enumerate() {
+            states[i].push(neuron.state);
+        }
+
+        sim.step(&mut network, &external_inputs);
+
+        if sim.current_time_step() % 500 == 0 {
             // Update synapse weights every 10 ms
             network.update_synapse_weights(0.0, 10.0, 0.9);
         }
