@@ -121,7 +121,7 @@ pub type SynapseId = u32;
 pub type TimeStep = u32;
 pub type Delay = u8;
 
-pub const MAX_DELAY: u8 = 40;
+const MAX_DELAY: u8 = 64;
 const STDP_FIRE_RESET: Num = 0.1;
 const STDP_DECAY: Num = 0.95;
 
@@ -165,13 +165,15 @@ struct Synapse {
 pub struct Network {
     neurons: Vec<Neuron>,
     synapses: Vec<Synapse>,
+    max_delay: Delay,
 }
 
 impl Network {
     pub fn new() -> Network {
         Network {
             neurons: Vec::new(),
-            synapses: Vec::new()
+            synapses: Vec::new(),
+            max_delay: 0,
         }
     }
 
@@ -194,11 +196,17 @@ impl Network {
         return neuron_id;
     }
 
+    pub fn max_delay(&self) -> Delay { self.max_delay }
+
     pub fn connect(&mut self, pre_neuron: NeuronId, post_neuron: NeuronId, delay: Delay, weight: Num) -> SynapseId {
         assert!((pre_neuron as usize) < self.neurons.len());
         assert!((post_neuron as usize) < self.neurons.len());
         assert!(delay > 0);
         assert!(delay <= MAX_DELAY);
+        
+        if delay > self.max_delay {
+            self.max_delay = delay;
+        }
 
         let synapse = Synapse {
             pre_neuron: pre_neuron,
@@ -234,7 +242,8 @@ impl Network {
                 println!("Neuron {} fired at {} ms", i, time_step);
                 for &syn_id in self.neurons[i].post_synapses.iter() {
                     let future = time_step + self.synapses[syn_id as usize].delay as TimeStep;
-                    future_spikes[future as usize % MAX_DELAY as usize].push(syn_id);
+                    let max_delay = future_spikes.len();
+                    future_spikes[future as usize % max_delay].push(syn_id);
                 }
 
                 // Excite the synapses that might have led to the firing of the underlying neuron.

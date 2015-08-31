@@ -1,7 +1,7 @@
 extern crate izhikevich_neurons;
 extern crate gnuplot;
 
-use izhikevich_neurons::{NeuronConfig, NeuronId, TimeStep, Num, Simulator, Network, MAX_DELAY};
+use izhikevich_neurons::{NeuronConfig, NeuronId, TimeStep, Num, Simulator, Network};
 use gnuplot::{Figure, Caption, Color, AxesCommon};
 
 fn main() {
@@ -31,7 +31,7 @@ fn main() {
     let _ = network.connect(n2, n2, 20, 7.0);
 
     let mut states: Vec<_> = PARAMS.iter().map(|_| Vec::new()).collect();
-    let mut sim = Simulator::new(MAX_DELAY as usize);
+    let mut sim = Simulator::new(network.max_delay() as usize);
 
     while sim.current_time_step() <= 1_000 {
         // record current state
