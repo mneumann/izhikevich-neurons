@@ -39,7 +39,9 @@ fn main() {
             states[i].push(neuron_state);
         }
 
-        sim.step(&mut network, &external_inputs);
+        sim.step(&mut network, &external_inputs, |neuron_id, timestep| {
+            println!("Neuron {} fired at {}", neuron_id, timestep);
+        });
 
         if sim.current_time_step() % 500 == 0 {
             // Update synapse weights every 10 ms

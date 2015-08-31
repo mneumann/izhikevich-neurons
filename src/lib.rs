@@ -224,7 +224,9 @@ impl Network {
         return synapse_id;
     }
 
-    fn update_state(&mut self, time_step: TimeStep, future_spikes: &mut Vec<Vec<SynapseId>>) {
+    fn update_state<F>(&mut self, time_step: TimeStep, future_spikes: &mut Vec<Vec<SynapseId>>,
+            fired_callback: F)
+    where F: Fn(NeuronId, TimeStep) {
         //for (i, mut neuron) in network.neurons.iter_mut().enumerate() {
         for i in 0 .. self.neurons.len() {
             let syn_i = self.neurons[i].i_ext + self.neurons[i].i_inp;
@@ -236,10 +238,11 @@ impl Network {
             self.neurons[i].stdp *= STDP_DECAY;
 
             if fired {
+                fired_callback(i as NeuronId, time_step);
+
                 // Reset the neurons STDP to a high value.
                 self.neurons[i].stdp = STDP_FIRE_RESET;
 
-                println!("Neuron {} fired at {} ms", i, time_step);
                 for &syn_id in self.neurons[i].post_synapses.iter() {
                     let future = time_step + self.synapses[syn_id as usize].delay as TimeStep;
                     let max_delay = future_spikes.len();
@@ -301,7 +304,8 @@ impl Simulator {
         self.current_time_step
     }
         
-    pub fn step(&mut self, network: &mut Network, external_inputs: &[(NeuronId, TimeStep, Num)]) {
+    pub fn step<F>(&mut self, network: &mut Network, external_inputs: &[(NeuronId, TimeStep, Num)], fired_callback: F)
+    where F: Fn(NeuronId, TimeStep) {
         let time_step = self.current_time_step;
 
         // Clear all input currents
@@ -336,7 +340,7 @@ impl Simulator {
             }
         }
 
-        network.update_state(time_step, &mut self.future_spikes);
+        network.update_state(time_step, &mut self.future_spikes, fired_callback);
 
         self.current_time_step += 1;
     }
