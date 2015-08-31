@@ -1,7 +1,7 @@
 extern crate izhikevich_neurons;
 extern crate gnuplot;
 
-use izhikevich_neurons::{Config, State, Num};
+use izhikevich_neurons::{NeuronConfig, NeuronState, Num};
 use gnuplot::{Figure, Caption, Color, AxesCommon};
 
 type NeuronId = u32;
@@ -27,8 +27,8 @@ struct Synapse {
 }
 
 struct Neuron {
-    state: State,
-    config: Config,
+    state: NeuronState,
+    config: NeuronConfig,
     i_ext: Num,
     i_inp: Num,
 
@@ -64,9 +64,9 @@ impl Network {
         }
     }
 
-    fn create_neuron(&mut self, config: Config) -> NeuronId {
+    fn create_neuron(&mut self, config: NeuronConfig) -> NeuronId {
         let neuron = Neuron {
-            state: State::new(),
+            state: NeuronState::new(),
             config: config,
             stdp: 0.0,
             i_ext: 0.0,
@@ -229,9 +229,9 @@ fn main() {
 
     let mut network = Network::new();
 
-    let n1 = network.create_neuron(Config::regular_spiking());
-    let n2 = network.create_neuron(Config::regular_spiking());
-    //let n3 = network.create_neuron(Config::regular_spiking());
+    let n1 = network.create_neuron(NeuronConfig::regular_spiking());
+    let n2 = network.create_neuron(NeuronConfig::regular_spiking());
+    //let n3 = network.create_neuron(NeuronConfig::regular_spiking());
 
     let external_inputs: &[(NeuronId, TimeStep, Num)] = &[
         (n1, 200, 7.0),

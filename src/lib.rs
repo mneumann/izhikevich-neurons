@@ -3,7 +3,7 @@ pub type Num = f32;
 
 /// Represents the state of a neuron.
 #[derive(Copy, Clone)]
-pub struct State {
+pub struct NeuronState {
     /// membrane potential of neuron (in mV)
     v: Num,
 
@@ -14,9 +14,9 @@ pub struct State {
 /// At which potential the neuron's potential is reset to `c`.
 const RESET_THRESHOLD : Num = 30.0;
 
-impl State {
-    pub fn new() -> State {
-        State {
+impl NeuronState {
+    pub fn new() -> NeuronState {
+        NeuronState {
             v: -70.0,
             u: -14.0
         }
@@ -31,7 +31,7 @@ impl State {
 }
 
 /// The neuron configuration parameters.
-pub struct Config {
+pub struct NeuronConfig {
     /// Rate of recovery.
     a: Num,
 
@@ -45,14 +45,14 @@ pub struct Config {
     d: Num
 }
 
-impl Config {
+impl NeuronConfig {
     /// Generates an excitatory neuron configuration according to Izhikevich's paper [reentry]
     /// where `r` is a random variable uniformly distributed in [0, 1].
-    pub fn excitatory(r: Num) -> Config {
+    pub fn excitatory(r: Num) -> NeuronConfig {
         debug_assert!(r >= 0.0 && r <= 1.0);
 
         let r2 = r*r;
-        Config {
+        NeuronConfig {
             a: 0.02,
             b: 0.2,
             c: -65.0 + 15.0 * r2,
@@ -60,10 +60,10 @@ impl Config {
         }
     }
 
-    pub fn inhibitory(r: Num) -> Config {
+    pub fn inhibitory(r: Num) -> NeuronConfig {
         debug_assert!(r >= 0.0 && r <= 1.0);
 
-        Config {
+        NeuronConfig {
             a: 0.02 + 0.08 * r,
             b: 0.25 - 0.05 * r,
             c: -65.0,
@@ -72,13 +72,13 @@ impl Config {
     }
 
     /// Regular spiking (RS) cell configuration.
-    pub fn regular_spiking() -> Config {
-        Config::excitatory(0.0)
+    pub fn regular_spiking() -> NeuronConfig {
+        NeuronConfig::excitatory(0.0)
     }
 
     /// Chattering (CH) cell configuration.
-    pub fn chattering() -> Config {
-        Config::excitatory(1.0)
+    pub fn chattering() -> NeuronConfig {
+        NeuronConfig::excitatory(1.0)
     }
 }
 
@@ -92,10 +92,10 @@ fn du(u: Num, v: Num, a: Num, b: Num) -> Num {
     a * (b*v - u)
 }
 
-impl State {
+impl NeuronState {
     #[inline(always)]
-    fn calc(self, dt: Num, i_syn: Num, config: &Config) -> State {
-        State {
+    fn calc(self, dt: Num, i_syn: Num, config: &NeuronConfig) -> NeuronState {
+        NeuronState {
             v: self.v + dt*dv(self.u, self.v, i_syn),
             u: self.u + dt*du(self.u, self.v, config.a, config.b)
         }
@@ -103,12 +103,12 @@ impl State {
 
     /// Calculate the new state after 1 ms.
     #[inline(always)]
-    pub fn step_1ms(self, i_syn: Num, config: &Config) -> (State, bool) {
+    pub fn step_1ms(self, i_syn: Num, config: &NeuronConfig) -> (NeuronState, bool) {
         if self.v < RESET_THRESHOLD {
             (self.calc(0.5, i_syn, config).calc(0.5, i_syn, config), false)
         }
         else {
-            (State {
+            (NeuronState {
                 v: config.c,
                 u: self.u + config.d
             }, true)
