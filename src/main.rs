@@ -2,7 +2,24 @@ extern crate izhikevich_neurons;
 extern crate gnuplot;
 
 use izhikevich_neurons::{NeuronConfig, NeuronId, TimeStep, Num, Simulator, Network};
-use gnuplot::{Figure, Caption, Color, AxesCommon};
+use gnuplot::{Figure, Caption, Color, AxesCommon, PlotOption};
+
+#[derive(Debug)]
+struct FireRecorder {
+    events: Vec<(NeuronId, TimeStep)>
+}
+
+impl FireRecorder {
+    pub fn new() -> FireRecorder {
+        FireRecorder {
+            events: Vec::new(),
+        }
+    }
+
+    pub fn record(&mut self, neuron_id: NeuronId, time_step: TimeStep) {
+        self.events.push((neuron_id, time_step));
+    }
+}
 
 fn main() {
     const PARAMS : &'static [(&'static str, &'static str)] = &[
@@ -12,6 +29,7 @@ fn main() {
         //("Neuron 3 [2.7 pA current 200..700ms]", 2.7, "green")
     ];
 
+    let mut fire_recorder = FireRecorder::new();
     let mut network = Network::new();
 
     let n1 = network.create_neuron(NeuronConfig::regular_spiking());
@@ -40,7 +58,7 @@ fn main() {
         }
 
         sim.step(&mut network, &external_inputs, |neuron_id, timestep| {
-            println!("Neuron {} fired at {}", neuron_id, timestep);
+            fire_recorder.record(neuron_id, timestep);
         });
 
         if sim.current_time_step() % 500 == 0 {
@@ -48,6 +66,24 @@ fn main() {
             network.update_synapse_weights(0.0, 10.0, 0.9);
         }
     }
+
+    {
+        println!("{:?}", fire_recorder);
+        let mut fg = Figure::new();
+        {
+            let mut diag = fg.axes2d().
+                set_x_label("time (ms)", &[]).
+                set_y_label("neuron id", &[]);
+
+            diag.points(
+                fire_recorder.events.iter().map(|&(_, t)| t),
+                fire_recorder.events.iter().map(|&(i, _)| i),
+                &[PlotOption::PointSymbol('S'), Color("black"), PlotOption::PointSize(1.25)]);
+        }
+        fg.show();
+    }
+
+
 
     {
         let mut fg = Figure::new();

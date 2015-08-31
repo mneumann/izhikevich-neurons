@@ -225,8 +225,8 @@ impl Network {
     }
 
     fn update_state<F>(&mut self, time_step: TimeStep, future_spikes: &mut Vec<Vec<SynapseId>>,
-            fired_callback: F)
-    where F: Fn(NeuronId, TimeStep) {
+            mut fired_callback: F)
+    where F: FnMut(NeuronId, TimeStep) {
         //for (i, mut neuron) in network.neurons.iter_mut().enumerate() {
         for i in 0 .. self.neurons.len() {
             let syn_i = self.neurons[i].i_ext + self.neurons[i].i_inp;
@@ -305,7 +305,7 @@ impl Simulator {
     }
         
     pub fn step<F>(&mut self, network: &mut Network, external_inputs: &[(NeuronId, TimeStep, Num)], fired_callback: F)
-    where F: Fn(NeuronId, TimeStep) {
+    where F: FnMut(NeuronId, TimeStep) {
         let time_step = self.current_time_step;
 
         // Clear all input currents
