@@ -45,6 +45,24 @@ pub struct NeuronConfig {
     d: Num
 }
 
+enum NeuronType {
+    Excitatory(Num),
+    Inhibitory(Num),
+    RegularSpiking,
+    Chattering,
+}
+
+impl NeuronType {
+    pub fn to_neuron_config(&self) -> NeuronConfig {
+        match *self {
+            NeuronType::Excitatory(r)  => NeuronConfig::excitatory(r),
+            NeuronType::Inhibitory(r)  => NeuronConfig::inhibitory(r),
+            NeuronType::RegularSpiking => NeuronConfig::regular_spiking(),
+            NeuronType::Chattering     => NeuronConfig::chattering(),
+        }
+    }
+}
+
 impl NeuronConfig {
     /// Generates an excitatory neuron configuration according to Izhikevich's paper [reentry]
     /// where `r` is a random variable uniformly distributed in [0, 1].
@@ -345,3 +363,23 @@ impl Simulator {
         self.current_time_step += 1;
     }
 }
+
+#[derive(Debug)]
+pub struct FireRecorder {
+    pub events: Vec<(NeuronId, TimeStep)>
+}
+
+impl FireRecorder {
+    pub fn new() -> FireRecorder {
+        FireRecorder {
+            events: Vec::new(),
+        }
+    }
+
+    pub fn record(&mut self, neuron_id: NeuronId, time_step: TimeStep) {
+        self.events.push((neuron_id, time_step));
+    }
+}
+
+//impl PotentialRecorder {
+//}
