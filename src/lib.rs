@@ -195,6 +195,11 @@ impl Network {
         }
     }
 
+    pub fn n_neurons_of<F>(&mut self, n: usize, f: F) -> Vec<NeuronId>
+    where F: Fn(usize) -> NeuronConfig {
+        (0..n).map(|i| self.create_neuron(f(i))).collect()
+    }
+
     pub fn save_state(&self) -> Vec<NeuronState> {
         self.neurons.iter().enumerate().map(|(_, n)| n.state).collect()
     }
@@ -215,6 +220,18 @@ impl Network {
     }
 
     pub fn max_delay(&self) -> Delay { self.max_delay }
+
+    pub fn total_neurons(&self) -> usize {
+        self.neurons.len()
+    }
+
+    pub fn connect_all(&mut self, a: &[NeuronId], b: &[NeuronId], delay: Delay, weight: Num) {
+        for &i in a.iter() {
+            for &o in b.iter() {
+                let _ = self.connect(i, o, delay, weight);
+            }
+        }
+    }
 
     pub fn connect(&mut self, pre_neuron: NeuronId, post_neuron: NeuronId, delay: Delay, weight: Num) -> SynapseId {
         assert!((pre_neuron as usize) < self.neurons.len());
@@ -335,7 +352,7 @@ impl Simulator {
         {
             let current_spikes = &mut self.future_spikes[(time_step % (self.max_delay as TimeStep)) as usize];
             for &syn_fired in current_spikes.iter() {
-                println!("time: {}. input from synapse: {}", time_step, syn_fired); 
+                //println!("time: {}. input from synapse: {}", time_step, syn_fired); 
                 let (weight, pre_neuron, post_neuron) = {
                     let syn = &network.synapses[syn_fired as usize];
                     (syn.weight, syn.pre_neuron, syn.post_neuron)

@@ -17,8 +17,9 @@ fn main() {
     let mut fire_recorder = FireRecorder::new();
     let mut network = Network::new();
 
-    let input_neurons: Vec<NeuronId> = (0..9).map(|_| network.create_neuron(NeuronConfig::regular_spiking())).collect();
-    let output_neurons: Vec<NeuronId> = (0..4).map(|_| network.create_neuron(NeuronConfig::regular_spiking())).collect();
+    let input_neurons = network.n_neurons_of(9, |_| NeuronConfig::regular_spiking());
+    let middle_neurons = network.n_neurons_of(18, |_| NeuronConfig::regular_spiking());
+    let output_neurons = network.n_neurons_of(1, |_| NeuronConfig::regular_spiking());
 
     //let n1 = network.create_neuron(NeuronConfig::regular_spiking());
     //let n2 = network.create_neuron(NeuronConfig::regular_spiking());
@@ -61,12 +62,13 @@ fn main() {
     */
 
     // connect every input neuron with every output neuron.
-    for &i in input_neurons.iter() {
-        for &o in output_neurons.iter() {
-                let _ = network.connect(i, o, 2, 7.0);
-        }
-    }
+    network.connect_all(&input_neurons[..], &middle_neurons[..], 2, 2.0);
+    network.connect_all(&input_neurons[..], &middle_neurons[..], 3, 2.0);
+    network.connect_all(&input_neurons[..], &middle_neurons[..], 5, 2.0);
 
+    network.connect_all(&middle_neurons[..], &output_neurons[..], 1, 1.0);
+
+/*
     for i in 0..4 {
 	    for j in 0..4 {
 		    if i != j {
@@ -74,6 +76,7 @@ fn main() {
 		    }
 	    }
     }
+*/
 
     /*let _ = network.connect(n1, n2, 10, 7.0);
     let _ = network.connect(n1, n2, 5, 7.0);
@@ -105,20 +108,19 @@ fn main() {
     }
 
     {
-	let num_neurons = 9u8 + 4;
-        println!("{:?}", fire_recorder);
+        //println!("{:?}", fire_recorder);
         let mut fg = Figure::new();
         {
             let mut diag = fg.axes2d().
 		set_y_ticks(Some( (AutoOption::Fix(1.0), 0) ), &[], &[]).
-		set_y_range(AutoOption::Fix(0.0), AutoOption::Fix(num_neurons as f64 - 1.0)).
+		set_y_range(AutoOption::Fix(0.0), AutoOption::Fix((network.total_neurons() - 1) as f64)).
                 set_x_label("time (ms)", &[]).
                 set_y_label("neuron id", &[]);
 
             diag.points(
                 fire_recorder.events.iter().map(|&(_, t)| t),
                 fire_recorder.events.iter().map(|&(i, _)| i),
-                &[PlotOption::PointSymbol('.'), Color("black"), PlotOption::PointSize(10.25)]);
+                &[PlotOption::PointSymbol('S'), Color("black"), PlotOption::PointSize(0.2)]);
         }
         fg.show();
     }
