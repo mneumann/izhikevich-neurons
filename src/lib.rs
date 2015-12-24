@@ -8,21 +8,25 @@ pub struct NeuronState {
     v: Num,
 
     /// recovery variable
-    u: Num
+    u: Num,
 }
 
 /// At which potential the neuron's potential is reset to `c`.
-const RESET_THRESHOLD : Num = 30.0;
+const RESET_THRESHOLD: Num = 30.0;
 
 impl NeuronState {
     pub fn new() -> NeuronState {
         NeuronState {
             v: -70.0,
-            u: -14.0
+            u: -14.0,
         }
     }
     pub fn potential(&self) -> Num {
-        if self.v < RESET_THRESHOLD { self.v } else { RESET_THRESHOLD }
+        if self.v < RESET_THRESHOLD {
+            self.v
+        } else {
+            RESET_THRESHOLD
+        }
     }
 
     pub fn recovery(&self) -> Num {
@@ -42,7 +46,7 @@ pub struct NeuronConfig {
     c: Num,
 
     /// After-spike reset of recovery variable `u`.
-    d: Num
+    d: Num,
 }
 
 enum NeuronType {
@@ -55,10 +59,10 @@ enum NeuronType {
 impl NeuronType {
     pub fn to_neuron_config(&self) -> NeuronConfig {
         match *self {
-            NeuronType::Excitatory(r)  => NeuronConfig::excitatory(r),
-            NeuronType::Inhibitory(r)  => NeuronConfig::inhibitory(r),
+            NeuronType::Excitatory(r) => NeuronConfig::excitatory(r),
+            NeuronType::Inhibitory(r) => NeuronConfig::inhibitory(r),
             NeuronType::RegularSpiking => NeuronConfig::regular_spiking(),
-            NeuronType::Chattering     => NeuronConfig::chattering(),
+            NeuronType::Chattering => NeuronConfig::chattering(),
         }
     }
 }
@@ -69,12 +73,12 @@ impl NeuronConfig {
     pub fn excitatory(r: Num) -> NeuronConfig {
         debug_assert!(r >= 0.0 && r <= 1.0);
 
-        let r2 = r*r;
+        let r2 = r * r;
         NeuronConfig {
             a: 0.02,
             b: 0.2,
             c: -65.0 + 15.0 * r2,
-            d: 8.0 - 6.0 * r2
+            d: 8.0 - 6.0 * r2,
         }
     }
 
@@ -85,7 +89,7 @@ impl NeuronConfig {
             a: 0.02 + 0.08 * r,
             b: 0.25 - 0.05 * r,
             c: -65.0,
-            d: 2.0
+            d: 2.0,
         }
     }
 
@@ -107,15 +111,15 @@ fn dv(u: Num, v: Num, i_syn: Num) -> Num {
 
 #[inline(always)]
 fn du(u: Num, v: Num, a: Num, b: Num) -> Num {
-    a * (b*v - u)
+    a * (b * v - u)
 }
 
 impl NeuronState {
     #[inline(always)]
     fn calc(self, dt: Num, i_syn: Num, config: &NeuronConfig) -> NeuronState {
         NeuronState {
-            v: self.v + dt*dv(self.u, self.v, i_syn),
-            u: self.u + dt*du(self.u, self.v, config.a, config.b)
+            v: self.v + dt * dv(self.u, self.v, i_syn),
+            u: self.u + dt * du(self.u, self.v, config.a, config.b),
         }
     }
 
@@ -123,13 +127,14 @@ impl NeuronState {
     #[inline(always)]
     pub fn step_1ms(self, i_syn: Num, config: &NeuronConfig) -> (NeuronState, bool) {
         if self.v < RESET_THRESHOLD {
-            (self.calc(0.5, i_syn, config).calc(0.5, i_syn, config), false)
-        }
-        else {
+            (self.calc(0.5, i_syn, config).calc(0.5, i_syn, config),
+             false)
+        } else {
             (NeuronState {
                 v: config.c,
-                u: self.u + config.d
-            }, true)
+                u: self.u + config.d,
+            },
+             true)
         }
     }
 }
@@ -155,7 +160,7 @@ struct Neuron {
     // `decay` process as for STDP for the action potential,
     // so that the shape of the spike is less sharp. A high
     // decay rate can simulate the old behaviour.
-
+    //
     // Spike-Time Dependent Plasticity
     //
     // when a neuron fires, we set this value to STDP_FIRE_RESET
@@ -175,9 +180,7 @@ struct Synapse {
     weight: Num,
 
     // efficiacy derivative used for STDP
-    eff_d: Num,
-
-    // ... learning parameters
+    eff_d: Num, // ... learning parameters
 }
 
 pub struct Network {
@@ -196,7 +199,8 @@ impl Network {
     }
 
     pub fn n_neurons_of<F>(&mut self, n: usize, f: F) -> Vec<NeuronId>
-    where F: Fn(usize) -> NeuronConfig {
+        where F: Fn(usize) -> NeuronConfig
+    {
         (0..n).map(|i| self.create_neuron(f(i))).collect()
     }
 
@@ -219,7 +223,9 @@ impl Network {
         return neuron_id;
     }
 
-    pub fn max_delay(&self) -> Delay { self.max_delay }
+    pub fn max_delay(&self) -> Delay {
+        self.max_delay
+    }
 
     pub fn total_neurons(&self) -> usize {
         self.neurons.len()
@@ -233,12 +239,17 @@ impl Network {
         }
     }
 
-    pub fn connect(&mut self, pre_neuron: NeuronId, post_neuron: NeuronId, delay: Delay, weight: Num) -> SynapseId {
+    pub fn connect(&mut self,
+                   pre_neuron: NeuronId,
+                   post_neuron: NeuronId,
+                   delay: Delay,
+                   weight: Num)
+                   -> SynapseId {
         assert!((pre_neuron as usize) < self.neurons.len());
         assert!((post_neuron as usize) < self.neurons.len());
         assert!(delay > 0);
         assert!(delay <= MAX_DELAY);
-        
+
         if delay > self.max_delay {
             self.max_delay = delay;
         }
@@ -246,7 +257,7 @@ impl Network {
         let synapse = Synapse {
             pre_neuron: pre_neuron,
             post_neuron: post_neuron,
-            delay: delay, 
+            delay: delay,
             weight: weight,
             eff_d: 0.0,
         };
@@ -259,11 +270,14 @@ impl Network {
         return synapse_id;
     }
 
-    fn update_state<F>(&mut self, time_step: TimeStep, future_spikes: &mut Vec<Vec<SynapseId>>,
-            mut fired_callback: F)
-    where F: FnMut(NeuronId, TimeStep) {
-        //for (i, mut neuron) in network.neurons.iter_mut().enumerate() {
-        for i in 0 .. self.neurons.len() {
+    fn update_state<F>(&mut self,
+                       time_step: TimeStep,
+                       future_spikes: &mut Vec<Vec<SynapseId>>,
+                       mut fired_callback: F)
+        where F: FnMut(NeuronId, TimeStep)
+    {
+        // for (i, mut neuron) in network.neurons.iter_mut().enumerate() {
+        for i in 0..self.neurons.len() {
             let syn_i = self.neurons[i].i_ext + self.neurons[i].i_inp;
 
             let (new_state, fired) = self.neurons[i].state.step_1ms(syn_i, &self.neurons[i].config);
@@ -291,25 +305,27 @@ impl Network {
                 // We do not update the synapses weight value immediatly, but only once very while
                 // (TODO), so that STDP reflects more LTP (Long Term Potentiation).
                 for &syn_id in self.neurons[i].pre_synapses.iter() {
-                    let stdp = self.neurons[self.synapses[syn_id as usize].pre_neuron as usize].stdp;
+                    let stdp = self.neurons[self.synapses[syn_id as usize].pre_neuron as usize]
+                                   .stdp;
                     self.synapses[syn_id as usize].eff_d += stdp;
                 }
             }
         }
     }
 
-    pub fn update_synapse_weights(&mut self, min_syn_weight: Num, max_syn_weight: Num, eff_d_decay: Num) {
+    pub fn update_synapse_weights(&mut self,
+                                  min_syn_weight: Num,
+                                  max_syn_weight: Num,
+                                  eff_d_decay: Num) {
         for syn in self.synapses.iter_mut() {
             let new_weight = syn.weight + syn.eff_d;
 
             // Restrict synapse weight min_syn_weight .. max_syn_weight
             if new_weight < min_syn_weight {
                 syn.weight = min_syn_weight;
-            }
-            else if new_weight > max_syn_weight {
+            } else if new_weight > max_syn_weight {
                 syn.weight = max_syn_weight;
-            }
-            else {
+            } else {
                 syn.weight = new_weight;
             }
             syn.eff_d *= eff_d_decay; // decay
@@ -331,16 +347,20 @@ impl Simulator {
         Simulator {
             current_time_step: 0,
             max_delay: max_delay,
-            future_spikes: (0..(max_delay+1)).map(|_| Vec::new()).collect(),
+            future_spikes: (0..(max_delay + 1)).map(|_| Vec::new()).collect(),
         }
     }
 
     pub fn current_time_step(&self) -> TimeStep {
         self.current_time_step
     }
-        
-    pub fn step<F>(&mut self, network: &mut Network, external_inputs: &[(NeuronId, TimeStep, Num)], fired_callback: F)
-    where F: FnMut(NeuronId, TimeStep) {
+
+    pub fn step<F>(&mut self,
+                   network: &mut Network,
+                   external_inputs: &[(NeuronId, TimeStep, Num)],
+                   fired_callback: F)
+        where F: FnMut(NeuronId, TimeStep)
+    {
         let time_step = self.current_time_step;
 
         // Clear all input currents
@@ -350,20 +370,24 @@ impl Simulator {
 
         // get all synapse input
         {
-            let current_spikes = &mut self.future_spikes[(time_step % (self.max_delay as TimeStep)) as usize];
+            let current_spikes =
+                &mut self.future_spikes[(time_step % (self.max_delay as TimeStep)) as usize];
             for &syn_fired in current_spikes.iter() {
-                //println!("time: {}. input from synapse: {}", time_step, syn_fired); 
+                // println!("time: {}. input from synapse: {}", time_step, syn_fired);
                 let (weight, pre_neuron, post_neuron) = {
                     let syn = &network.synapses[syn_fired as usize];
                     (syn.weight, syn.pre_neuron, syn.post_neuron)
                 };
-                network.neurons[post_neuron as usize].i_inp += weight; 
+                network.neurons[post_neuron as usize].i_inp += weight;
 
                 // whenever a spike arrives here at it's post_neuron, this means, that
-                // the pre-neuron fired some time ago (delay time-steps). It can be the 
+                // the pre-neuron fired some time ago (delay time-steps). It can be the
                 // case that the post_neuron has fired ealier, in which case we have to
                 // depress the synapse according to the STDP rule.
-                network.synapses[syn_fired as usize].eff_d += network.neurons[pre_neuron as usize].stdp - network.neurons[post_neuron as usize].stdp;
+                network.synapses[syn_fired as usize].eff_d += network.neurons[pre_neuron as usize]
+                                                                  .stdp -
+                                                              network.neurons[post_neuron as usize]
+                                                                  .stdp;
             }
             current_spikes.clear();
         }
@@ -383,14 +407,12 @@ impl Simulator {
 
 #[derive(Debug)]
 pub struct FireRecorder {
-    pub events: Vec<(NeuronId, TimeStep)>
+    pub events: Vec<(NeuronId, TimeStep)>,
 }
 
 impl FireRecorder {
     pub fn new() -> FireRecorder {
-        FireRecorder {
-            events: Vec::new(),
-        }
+        FireRecorder { events: Vec::new() }
     }
 
     pub fn record(&mut self, neuron_id: NeuronId, time_step: TimeStep) {
@@ -398,5 +420,5 @@ impl FireRecorder {
     }
 }
 
-//impl PotentialRecorder {
-//}
+// impl PotentialRecorder {
+// }
