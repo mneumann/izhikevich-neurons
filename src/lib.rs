@@ -1,6 +1,7 @@
 extern crate closed01;
 pub use neuron_state::NeuronState;
 pub use neuron_config::NeuronConfig;
+pub use neuron_type::NeuronType;
 
 pub mod neuron_state;
 pub mod neuron_config;
@@ -106,6 +107,37 @@ impl Network {
             for &o in b.iter() {
                 let _ = self.connect(i, o, delay, weight);
             }
+        }
+    }
+
+    /// Clear the input currents of all neurons
+    pub fn clear_all_input_currents(&mut self) {
+        for neuron in self.neurons.iter_mut() {
+            neuron.i_inp = 0.0;
+        }
+    }
+
+    /// Excite ```neuron_id``` with ```current```.
+    pub fn set_external_input(&mut self, neuron_id: NeuronId, current: Num) {
+        self.neurons[neuron_id as usize].i_ext = current;
+    }
+
+    /// The synapses ```firing_synapses``` fire. Update the network state.
+    pub fn process_firing_synapses(&mut self, firing_synapses: &[SynapseId]) {
+        for &syn_id in firing_synapses {
+            let syn = &mut self.synapses[syn_id as usize];
+
+            let pre_neuron_stdp = self.neurons[syn.pre_neuron as usize].stdp;
+            let post_neuron = &mut self.neurons[syn.post_neuron as usize];
+            let post_neuron_stdp = post_neuron.stdp;
+
+            post_neuron.i_inp += syn.weight;
+
+            // whenever a spike arrives here at it's post_neuron, this means, that
+            // the pre-neuron fired some time ago (delay time-steps). It can be the
+            // case that the post_neuron has fired ealier, in which case we have to
+            // depress the synapse according to the STDP rule.
+            syn.eff_d += pre_neuron_stdp - post_neuron_stdp;
         }
     }
 
@@ -234,38 +266,20 @@ impl Simulator {
         let time_step = self.current_time_step;
 
         // Clear all input currents
-        for neuron in network.neurons.iter_mut() {
-            neuron.i_inp = 0.0;
-        }
+        network.clear_all_input_currents();
 
         // get all synapse input
         {
-            let current_spikes =
-                &mut self.future_spikes[(time_step % (self.max_delay as TimeStep)) as usize];
-            for &syn_fired in current_spikes.iter() {
-                // println!("time: {}. input from synapse: {}", time_step, syn_fired);
-                let (weight, pre_neuron, post_neuron) = {
-                    let syn = &network.synapses[syn_fired as usize];
-                    (syn.weight, syn.pre_neuron, syn.post_neuron)
-                };
-                network.neurons[post_neuron as usize].i_inp += weight;
-
-                // whenever a spike arrives here at it's post_neuron, this means, that
-                // the pre-neuron fired some time ago (delay time-steps). It can be the
-                // case that the post_neuron has fired ealier, in which case we have to
-                // depress the synapse according to the STDP rule.
-                network.synapses[syn_fired as usize].eff_d += network.neurons[pre_neuron as usize]
-                                                                  .stdp -
-                                                              network.neurons[post_neuron as usize]
-                                                                  .stdp;
-            }
-            current_spikes.clear();
+            let time_slot = (time_step % (self.max_delay as TimeStep)) as usize;
+            let spikes = &mut self.future_spikes[time_slot];
+            network.process_firing_synapses(spikes);
+            spikes.clear();
         }
 
         // set external inputs
-        for &(n_id, at, current) in external_inputs {
+        for &(neuron_id, at, current) in external_inputs {
             if time_step == at {
-                network.neurons[n_id as usize].i_ext = current;
+                network.set_external_input(neuron_id, current);
             }
         }
 
