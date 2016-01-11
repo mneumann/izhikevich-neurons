@@ -27,6 +27,28 @@ struct Neuron {
     post_synapses: Vec<SynapseId>,
 }
 
+impl Neuron {
+    // Update the internal neuron state according to the synaptic input.
+    // Returns true when neuron fired.
+    fn update_state(&mut self, stdp_decay: Num, stdp_fire_reset: Num) -> bool {
+        // synaptic input
+        let syn_i = self.i_ext + self.i_inp;
+
+        let (new_state, fired) = self.state.step_1ms(syn_i, &self.config);
+        self.state = new_state;
+
+        if fired {
+            // Reset the neurons STDP to a high value.
+            self.stdp = stdp_fire_reset;
+        } else {
+            // decay STDP
+            self.stdp *= stdp_decay;
+        }
+
+        return fired;
+    }
+}
+
 struct Synapse {
     pre_neuron: NeuronId,
     post_neuron: NeuronId,
@@ -162,24 +184,15 @@ impl Network {
         where E: FnMut(SynapseId, Delay),
               F: FnMut(NeuronId)
     {
-        // for (i, mut neuron) in network.neurons.iter_mut().enumerate() {
-        // XXX
         for i in 0..self.neurons.len() {
-            let syn_i = self.neurons[i].i_ext + self.neurons[i].i_inp;
-
-            let (new_state, fired) = self.neurons[i].state.step_1ms(syn_i, &self.neurons[i].config);
-            self.neurons[i].state = new_state;
-
-            // decay STDP
-            self.neurons[i].stdp *= stdp_decay;
+            let fired = self.neurons[i].update_state(stdp_decay, stdp_fire_reset);
 
             if fired {
+                let neuron = &self.neurons[i];
+
                 fired_callback(NeuronId::from(i));
 
-                // Reset the neurons STDP to a high value.
-                self.neurons[i].stdp = stdp_fire_reset;
-
-                for &syn_id in self.neurons[i].post_synapses.iter() {
+                for &syn_id in neuron.post_synapses.iter() {
                     enqueue_future_spike(syn_id, self.synapses[syn_id.index()].delay);
                 }
 
@@ -189,7 +202,7 @@ impl Network {
                 //
                 // We do not update the synapses weight value immediatly, but only once very while
                 // (TODO), so that STDP reflects more LTP (Long Term Potentiation).
-                for &syn_id in self.neurons[i].pre_synapses.iter() {
+                for &syn_id in neuron.pre_synapses.iter() {
                     let stdp = self.neurons[self.synapses[syn_id.index()].pre_neuron.index()].stdp;
                     self.synapses[syn_id.index()].eff_d += stdp;
                 }
@@ -205,13 +218,13 @@ impl Network {
             let new_weight = syn.weight + syn.eff_d;
 
             // Restrict synapse weight min_syn_weight .. max_syn_weight
-            if new_weight < min_syn_weight {
-                syn.weight = min_syn_weight;
+            syn.weight = if new_weight < min_syn_weight {
+                min_syn_weight
             } else if new_weight > max_syn_weight {
-                syn.weight = max_syn_weight;
+                max_syn_weight
             } else {
-                syn.weight = new_weight;
-            }
+                new_weight
+            };
             syn.eff_d *= eff_d_decay; // decay
         }
     }
