@@ -35,7 +35,7 @@ impl Simulator {
         let time_step = self.current_time_step;
 
         // Clear all input currents
-        network.clear_all_input_currents();
+        network.reset_all_input_currents();
 
         // get all synapse input
         {

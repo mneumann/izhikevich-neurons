@@ -93,8 +93,8 @@ impl Network {
         }
     }
 
-    /// Clear the input currents of all neurons
-    pub fn clear_all_input_currents(&mut self) {
+    /// Reset the input currents of all neurons
+    pub fn reset_all_input_currents(&mut self) {
         for neuron in self.neurons.iter_mut() {
             neuron.i_inp = 0.0;
         }
