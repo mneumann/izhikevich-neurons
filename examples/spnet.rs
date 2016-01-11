@@ -3,14 +3,16 @@
 // Polychronization: Computing with Spikes (2006).
 //
 
+#![allow(unused_variables)]
+
 extern crate rand;
 
 const M: usize = 100;       // number of synapses per neuronn
 const D: usize = 20;        // maximal conduction delay
 const M_D: usize = M / D;   // must be an integer. number of synapses per delay step
-const Ne: usize = 800;      // total number of excitatory neurons
-const Ni: usize = 200;      // total number of inhibitory neurons
-const N: usize = Ne + Ni;   // total number of neurons
+const NE: usize = 800;      // total number of excitatory neurons
+const NI: usize = 200;      // total number of inhibitory neurons
+const N: usize = NE + NI;   // total number of neurons
 
 type Num = f32;
 
@@ -21,12 +23,12 @@ fn main() {
     // exhibitory neurons connect to both kinds
     let ne_between = Range::new(0, N);
     // inhibitory neurons only connect to excitatory neurons
-    let ni_between = Range::new(0, Ne);
+    let ni_between = Range::new(0, NE);
 
     // neuron parameters
     let a: Vec<Num> = (0..N)
                           .map(|i| {
-                              if i < Ne {
+                              if i < NE {
                                   0.02
                               } else {
                                   0.1
@@ -35,7 +37,7 @@ fn main() {
                           .collect();
     let d: Vec<Num> = (0..N)
                           .map(|i| {
-                              if i < Ne {
+                              if i < NE {
                                   8.0
                               } else {
                                   2.0
@@ -54,7 +56,7 @@ fn main() {
     // Every neuron has M postsynaptic neurons.
     let post: Vec<Vec<usize>> = (0..N)
                                     .map(|i| {
-                                        if i < Ne {
+                                        if i < NE {
                                             (0..M)
                                                 .map(|_| ne_between.ind_sample(&mut rng))
                                                 .collect()
@@ -69,7 +71,7 @@ fn main() {
     // synaptic weights. NxM matrix
     let s: Vec<Vec<Num>> = (0..N)
                                .map(|i| {
-                                   if i < Ne {
+                                   if i < NE {
                                        (0..M).map(|_| 6.0).collect()
                                    } else {
                                        (0..M).map(|_| -5.0).collect()
@@ -84,7 +86,7 @@ fn main() {
     // contains the indices of the synapses (0..M) for each delay step
     let delays: Vec<Vec<Vec<usize>>> = (0..N)
                                            .map(|i| {
-                                               if i < Ne {
+                                               if i < NE {
                                                    (0..D)
                                                        .map(|j| (M_D * j..M_D * (j + 1)).collect())
                                                        .collect()

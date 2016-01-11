@@ -2,7 +2,7 @@ extern crate izhikevich_neurons;
 extern crate gnuplot;
 
 use izhikevich_neurons::{NeuronConfig, NeuronId, TimeStep, Num, Simulator, Network, FireRecorder};
-use gnuplot::{Figure, Caption, Color, AxesCommon, PlotOption, AutoOption};
+use gnuplot::{Figure, /*Caption,*/ Color, AxesCommon, PlotOption, AutoOption};
 
 fn main() {
     // const PARAMS : &'static [(&'static str, &'static str)] = &[
