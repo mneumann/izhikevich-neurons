@@ -1,3 +1,7 @@
+extern crate closed01;
+
+use closed01::Closed01;
+
 /// We use this numerical type for all calculations.
 pub type Num = f32;
 
@@ -34,7 +38,7 @@ impl NeuronState {
     }
 }
 
-/// The neuron configuration parameters.
+/// The Neuron's configuration parameters.
 pub struct NeuronConfig {
     /// Rate of recovery.
     a: Num,
@@ -49,30 +53,11 @@ pub struct NeuronConfig {
     d: Num,
 }
 
-enum NeuronType {
-    Excitatory(Num),
-    Inhibitory(Num),
-    RegularSpiking,
-    Chattering,
-}
-
-impl NeuronType {
-    pub fn to_neuron_config(&self) -> NeuronConfig {
-        match *self {
-            NeuronType::Excitatory(r) => NeuronConfig::excitatory(r),
-            NeuronType::Inhibitory(r) => NeuronConfig::inhibitory(r),
-            NeuronType::RegularSpiking => NeuronConfig::regular_spiking(),
-            NeuronType::Chattering => NeuronConfig::chattering(),
-        }
-    }
-}
-
 impl NeuronConfig {
     /// Generates an excitatory neuron configuration according to Izhikevich's paper [reentry]
     /// where `r` is a random variable uniformly distributed in [0, 1].
-    pub fn excitatory(r: Num) -> NeuronConfig {
-        debug_assert!(r >= 0.0 && r <= 1.0);
-
+    pub fn excitatory(r: Closed01<Num>) -> NeuronConfig {
+        let r = r.get();
         let r2 = r * r;
         NeuronConfig {
             a: 0.02,
@@ -82,9 +67,8 @@ impl NeuronConfig {
         }
     }
 
-    pub fn inhibitory(r: Num) -> NeuronConfig {
-        debug_assert!(r >= 0.0 && r <= 1.0);
-
+    pub fn inhibitory(r: Closed01<Num>) -> NeuronConfig {
+        let r = r.get();
         NeuronConfig {
             a: 0.02 + 0.08 * r,
             b: 0.25 - 0.05 * r,
@@ -95,12 +79,12 @@ impl NeuronConfig {
 
     /// Regular spiking (RS) cell configuration.
     pub fn regular_spiking() -> NeuronConfig {
-        NeuronConfig::excitatory(0.0)
+        NeuronConfig::excitatory(Closed01::new(0.0))
     }
 
     /// Chattering (CH) cell configuration.
     pub fn chattering() -> NeuronConfig {
-        NeuronConfig::excitatory(1.0)
+        NeuronConfig::excitatory(Closed01::new(1.0))
     }
 }
 
@@ -135,6 +119,26 @@ impl NeuronState {
                 u: self.u + config.d,
             },
              true)
+        }
+    }
+}
+
+/// Datastructure representing one of the broad neuron type.
+/// Can be directly converted into a NeuronConfig.
+pub enum NeuronType {
+    Excitatory(Closed01<Num>),
+    Inhibitory(Closed01<Num>),
+    RegularSpiking,
+    Chattering,
+}
+
+impl Into<NeuronConfig> for NeuronType {
+    fn into(self) -> NeuronConfig {
+        match self {
+            NeuronType::Excitatory(r) => NeuronConfig::excitatory(r),
+            NeuronType::Inhibitory(r) => NeuronConfig::inhibitory(r),
+            NeuronType::RegularSpiking => NeuronConfig::regular_spiking(),
+            NeuronType::Chattering => NeuronConfig::chattering(),
         }
     }
 }

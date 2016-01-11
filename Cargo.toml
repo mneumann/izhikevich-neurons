@@ -3,10 +3,7 @@ name = "izhikevich-neurons"
 version = "0.1.0"
 authors = ["Michael Neumann <mneumann@ntecs.de>"]
 
-[dependencies.gnuplot]
-
-git = "https://github.com/SiegeLord/RustGnuplot.git"
-
-[dependencies.rand]
-
-version = "0.3"
+[dependencies]
+gnuplot = { git = "https://github.com/SiegeLord/RustGnuplot.git" }
+rand = "0.3"
+closed01 = "0.3.0"
