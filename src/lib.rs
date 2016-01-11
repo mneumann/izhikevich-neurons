@@ -19,9 +19,6 @@ pub type SynapseId = u32;
 pub type TimeStep = u32;
 pub type Delay = u8;
 
-const MAX_DELAY: u8 = 64;
-
-
 #[derive(Debug)]
 pub struct FireRecorder {
     pub events: Vec<(NeuronId, TimeStep)>,

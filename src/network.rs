@@ -1,6 +1,6 @@
 use super::neuron_state::NeuronState;
 use super::neuron_config::NeuronConfig;
-use super::{Num, SynapseId, NeuronId, Delay, MAX_DELAY};
+use super::{Num, SynapseId, NeuronId, Delay};
 
 struct Neuron {
     state: NeuronState,
@@ -133,7 +133,6 @@ impl Network {
         assert!((pre_neuron as usize) < self.neurons.len());
         assert!((post_neuron as usize) < self.neurons.len());
         assert!(delay > 0);
-        assert!(delay <= MAX_DELAY);
 
         if delay > self.max_delay {
             self.max_delay = delay;
