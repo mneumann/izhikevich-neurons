@@ -146,9 +146,11 @@ fn main() {
         // }
 
 
-        sim.step(&mut network, &external_inputs[..], &mut |neuron_id, timestep| {
-            fire_recorder.record(neuron_id, timestep);
-        });
+        sim.step(&mut network,
+                 &external_inputs[..],
+                 &mut |neuron_id, timestep| {
+                     fire_recorder.record(neuron_id, timestep);
+                 });
 
         if sim.current_time_step() % 500 == 0 {
             // Update synapse weights every 10 ms
@@ -170,7 +172,7 @@ fn main() {
                              .set_y_label("neuron id", &[]);
 
             diag.points(fire_recorder.events.iter().map(|&(_, t)| t),
-                        fire_recorder.events.iter().map(|&(i, _)| i),
+                        fire_recorder.events.iter().map(|&(i, _)| i.index()),
                         &[PlotOption::PointSymbol('S'),
                           Color("black"),
                           PlotOption::PointSize(0.2)]);

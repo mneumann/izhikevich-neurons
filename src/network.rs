@@ -72,7 +72,7 @@ impl Network {
             pre_synapses: Vec::new(),
             post_synapses: Vec::new(),
         };
-        let neuron_id = self.neurons.len() as u32;
+        let neuron_id = NeuronId::from(self.neurons.len());
         self.neurons.push(neuron);
         return neuron_id;
     }
@@ -102,16 +102,16 @@ impl Network {
 
     /// Excite ```neuron_id``` with ```current```.
     pub fn set_external_input(&mut self, neuron_id: NeuronId, current: Num) {
-        self.neurons[neuron_id as usize].i_ext = current;
+        self.neurons[neuron_id.index()].i_ext = current;
     }
 
     /// The synapses ```firing_synapses``` fire. Update the network state.
     pub fn process_firing_synapses(&mut self, firing_synapses: &[SynapseId]) {
         for &syn_id in firing_synapses {
-            let syn = &mut self.synapses[syn_id as usize];
+            let syn = &mut self.synapses[syn_id.index()];
 
-            let pre_neuron_stdp = self.neurons[syn.pre_neuron as usize].stdp;
-            let post_neuron = &mut self.neurons[syn.post_neuron as usize];
+            let pre_neuron_stdp = self.neurons[syn.pre_neuron.index()].stdp;
+            let post_neuron = &mut self.neurons[syn.post_neuron.index()];
             let post_neuron_stdp = post_neuron.stdp;
 
             post_neuron.i_inp += syn.weight;
@@ -130,8 +130,8 @@ impl Network {
                    delay: Delay,
                    weight: Num)
                    -> SynapseId {
-        assert!((pre_neuron as usize) < self.neurons.len());
-        assert!((post_neuron as usize) < self.neurons.len());
+        assert!(pre_neuron.index() < self.neurons.len());
+        assert!(post_neuron.index() < self.neurons.len());
         assert!(delay > 0);
 
         if delay > self.max_delay {
@@ -145,20 +145,20 @@ impl Network {
             weight: weight,
             eff_d: 0.0,
         };
-        let synapse_id = self.synapses.len() as u32;
+        let synapse_id = SynapseId::from(self.synapses.len());
 
         self.synapses.push(synapse);
-        self.neurons[pre_neuron as usize].post_synapses.push(synapse_id);
-        self.neurons[post_neuron as usize].pre_synapses.push(synapse_id);
+        self.neurons[pre_neuron.index()].post_synapses.push(synapse_id);
+        self.neurons[post_neuron.index()].pre_synapses.push(synapse_id);
 
         return synapse_id;
     }
 
     pub fn update_state<E, F>(&mut self,
-                       stdp_fire_reset: Num,
-                       stdp_decay: Num,
-                       enqueue_future_spike: &mut E,
-                       fired_callback: &mut F)
+                              stdp_fire_reset: Num,
+                              stdp_decay: Num,
+                              enqueue_future_spike: &mut E,
+                              fired_callback: &mut F)
         where E: FnMut(SynapseId, Delay),
               F: FnMut(NeuronId)
     {
@@ -174,13 +174,13 @@ impl Network {
             self.neurons[i].stdp *= stdp_decay;
 
             if fired {
-                fired_callback(i as NeuronId);
+                fired_callback(NeuronId::from(i));
 
                 // Reset the neurons STDP to a high value.
                 self.neurons[i].stdp = stdp_fire_reset;
 
                 for &syn_id in self.neurons[i].post_synapses.iter() {
-                    enqueue_future_spike(syn_id, self.synapses[syn_id as usize].delay);
+                    enqueue_future_spike(syn_id, self.synapses[syn_id.index()].delay);
                 }
 
                 // Excite the synapses that might have led to the firing of the underlying neuron.
@@ -190,9 +190,8 @@ impl Network {
                 // We do not update the synapses weight value immediatly, but only once very while
                 // (TODO), so that STDP reflects more LTP (Long Term Potentiation).
                 for &syn_id in self.neurons[i].pre_synapses.iter() {
-                    let stdp = self.neurons[self.synapses[syn_id as usize].pre_neuron as usize]
-                                   .stdp;
-                    self.synapses[syn_id as usize].eff_d += stdp;
+                    let stdp = self.neurons[self.synapses[syn_id.index()].pre_neuron.index()].stdp;
+                    self.synapses[syn_id.index()].eff_d += stdp;
                 }
             }
         }

@@ -14,8 +14,40 @@ pub mod simulator;
 /// We use this numerical type for all calculations.
 pub type Num = f32;
 
-pub type NeuronId = u32;
-pub type SynapseId = u32;
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub struct NeuronId(pub u32);
+
+impl NeuronId {
+    #[inline(always)]
+    pub fn index(&self) -> usize {
+        self.0 as usize
+    }
+}
+
+impl From<usize> for NeuronId {
+    #[inline(always)]
+    fn from(index: usize) -> Self {
+        NeuronId(index as u32)
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub struct SynapseId(pub u32);
+
+impl SynapseId {
+    #[inline(always)]
+    pub fn index(&self) -> usize {
+        self.0 as usize
+    }
+}
+
+impl From<usize> for SynapseId {
+    #[inline(always)]
+    fn from(index: usize) -> Self {
+        SynapseId(index as u32)
+    }
+}
+
 pub type TimeStep = u32;
 pub type Delay = u8;
 
