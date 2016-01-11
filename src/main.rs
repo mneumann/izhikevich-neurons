@@ -146,7 +146,7 @@ fn main() {
         // }
 
 
-        sim.step(&mut network, &external_inputs[..], |neuron_id, timestep| {
+        sim.step(&mut network, &external_inputs[..], &mut |neuron_id, timestep| {
             fire_recorder.record(neuron_id, timestep);
         });
 
