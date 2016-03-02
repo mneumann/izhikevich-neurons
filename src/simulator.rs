@@ -8,8 +8,7 @@ pub struct Simulator {
     current_time_step: TimeStep,
     max_delay: usize,
 
-    // We use a cyclic buffer
-    // We use (time_step % max_delay) as index into the futures_spike array
+    // We use a cyclic buffer with (time_step % max_delay) as index into the futures_spike array
     future_spikes: Vec<Vec<SynapseId>>,
 }
 
@@ -26,9 +25,10 @@ impl Simulator {
         self.current_time_step
     }
 
+    /// External input currents have to be set manually by calling `set_external_input`. 
+
     pub fn step<F>(&mut self,
                    network: &mut Network,
-                   external_inputs: &[(NeuronId, TimeStep, Num)],
                    fired_callback: &mut F)
         where F: FnMut(NeuronId, TimeStep)
     {
@@ -43,14 +43,6 @@ impl Simulator {
             let spikes = &mut self.future_spikes[time_slot];
             network.process_firing_synapses(spikes);
             spikes.clear();
-        }
-
-        // set external inputs
-        // XXX
-        for &(neuron_id, at, current) in external_inputs {
-            if time_step == at {
-                network.set_external_input(neuron_id, current);
-            }
         }
 
         network.update_state(STDP_FIRE_RESET,

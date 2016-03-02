@@ -116,18 +116,21 @@ impl Network {
     }
 
     /// Reset the input currents of all neurons
+
     pub fn reset_all_input_currents(&mut self) {
         for neuron in self.neurons.iter_mut() {
             neuron.i_inp = 0.0;
         }
     }
 
-    /// Excite ```neuron_id``` with ```current```.
+    /// Excite `neuron_id` with `current`.
+
     pub fn set_external_input(&mut self, neuron_id: NeuronId, current: Num) {
         self.neurons[neuron_id.index()].i_ext = current;
     }
 
-    /// The synapses ```firing_synapses``` fire. Update the network state.
+    /// The synapses `firing_synapses` fire. Update the network state.
+
     pub fn process_firing_synapses(&mut self, firing_synapses: &[SynapseId]) {
         for &syn_id in firing_synapses {
             let syn = &mut self.synapses[syn_id.index()];

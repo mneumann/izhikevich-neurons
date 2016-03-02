@@ -145,9 +145,15 @@ fn main() {
         // states[i].push(neuron_state);
         // }
 
+        // set external inputs
+
+        for &(neuron_id, at, current) in external_inputs.iter() {
+            if sim.current_time_step() == at {
+                network.set_external_input(neuron_id, current);
+            }
+        }
 
         sim.step(&mut network,
-                 &external_inputs[..],
                  &mut |neuron_id, timestep| {
                      fire_recorder.record(neuron_id, timestep);
                  });
