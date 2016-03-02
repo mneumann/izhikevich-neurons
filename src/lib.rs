@@ -10,12 +10,13 @@ pub mod neuron_config;
 pub mod neuron_type;
 pub mod network;
 pub mod simulator;
+pub mod event_queue;
 
 /// We use this numerical type for all calculations.
 pub type Num = f32;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct NeuronId(pub u32);
+pub struct NeuronId(u32);
 
 impl NeuronId {
     #[inline(always)]
@@ -32,7 +33,7 @@ impl From<usize> for NeuronId {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct SynapseId(pub u32);
+pub struct SynapseId(u32);
 
 impl SynapseId {
     #[inline(always)]
@@ -48,12 +49,12 @@ impl From<usize> for SynapseId {
     }
 }
 
-pub type TimeStep = u32;
+pub type Timestep = usize;
 pub type Delay = u8;
 
 #[derive(Debug)]
 pub struct FireRecorder {
-    pub events: Vec<(NeuronId, TimeStep)>,
+    pub events: Vec<(NeuronId, Timestep)>,
 }
 
 impl FireRecorder {
@@ -61,7 +62,9 @@ impl FireRecorder {
         FireRecorder { events: Vec::new() }
     }
 
-    pub fn record(&mut self, neuron_id: NeuronId, time_step: TimeStep) {
+    pub fn record(&mut self, neuron_id: NeuronId, time_step: Timestep) {
         self.events.push((neuron_id, time_step));
     }
 }
+
+

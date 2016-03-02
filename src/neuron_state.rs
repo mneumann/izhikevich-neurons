@@ -4,7 +4,7 @@ use super::{Num, NeuronConfig};
 const RESET_THRESHOLD: Num = 30.0;
 
 /// Represents the state of a neuron.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct NeuronState {
     /// membrane potential of neuron (in mV)
     v: Num,

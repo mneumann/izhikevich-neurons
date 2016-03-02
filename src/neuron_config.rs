@@ -2,6 +2,7 @@ use closed01::Closed01;
 use super::Num;
 
 /// A neuron's configuration parameters.
+#[derive(Debug)]
 pub struct NeuronConfig {
     /// Rate of recovery.
     pub a: Num,

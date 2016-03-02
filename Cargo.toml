@@ -4,6 +4,8 @@ version = "0.1.0"
 authors = ["Michael Neumann <mneumann@ntecs.de>"]
 
 [dependencies]
+closed01 = "0.4"
+
+[dev-dependencies]
 gnuplot = { git = "https://github.com/SiegeLord/RustGnuplot.git" }
 rand = "0.3"
-closed01 = "0.3.0"

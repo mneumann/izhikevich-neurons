@@ -2,7 +2,8 @@ use super::neuron_state::NeuronState;
 use super::neuron_config::NeuronConfig;
 use super::{Num, SynapseId, NeuronId, Delay};
 
-struct Neuron {
+#[derive(Debug)]
+pub struct Neuron {
     state: NeuronState,
     config: NeuronConfig,
     i_ext: Num,
@@ -49,6 +50,7 @@ impl Neuron {
     }
 }
 
+#[derive(Debug)]
 struct Synapse {
     pre_neuron: NeuronId,
     post_neuron: NeuronId,
@@ -59,6 +61,7 @@ struct Synapse {
     eff_d: Num, // ... learning parameters
 }
 
+#[derive(Debug)]
 pub struct Network {
     neurons: Vec<Neuron>,
     synapses: Vec<Synapse>,
@@ -74,8 +77,12 @@ impl Network {
         }
     }
 
-    pub fn n_neurons_of<F>(&mut self, n: usize, f: F) -> Vec<NeuronId>
-        where F: Fn(usize) -> NeuronConfig
+    pub fn get_neuron(&self, neuron_id: NeuronId) -> &Neuron {
+        &self.neurons[neuron_id.index()]
+    }
+
+    pub fn n_neurons_of<F>(&mut self, n: usize, f: &mut F) -> Vec<NeuronId>
+        where F: FnMut(usize) -> NeuronConfig
     {
         (0..n).map(|i| self.create_neuron(f(i))).collect()
     }
@@ -107,13 +114,32 @@ impl Network {
         self.neurons.len()
     }
 
-    pub fn connect_all(&mut self, a: &[NeuronId], b: &[NeuronId], delay: Delay, weight: Num) {
-        for &i in a.iter() {
-            for &o in b.iter() {
-                let _ = self.connect(i, o, delay, weight);
+    pub fn connect_all(&mut self,
+                       from_neurons: &[NeuronId],
+                       to_neurons: &[NeuronId],
+                       delay: Delay,
+                       weight: Num) {
+        self.connect_all_with(from_neurons, to_neurons, &mut |_, _| Some((delay, weight)));
+    }
+
+    pub fn connect_all_with<F>(&mut self,
+                               from_neurons: &[NeuronId],
+                               to_neurons: &[NeuronId],
+                               f: &mut F)
+        where F: FnMut(NeuronId, NeuronId) -> Option<(Delay, Num)>
+    {
+        for &from in from_neurons {
+            for &to in to_neurons {
+                match f(from, to) {
+                    Some((delay, weight)) => {
+                        let _ = self.connect(from, to, delay, weight);
+                    }
+                    None => {}
+                }
             }
         }
     }
+
 
     /// Reset the input currents of all neurons
 
@@ -127,6 +153,10 @@ impl Network {
 
     pub fn set_external_input(&mut self, neuron_id: NeuronId, current: Num) {
         self.neurons[neuron_id.index()].i_ext = current;
+    }
+
+    pub fn get_external_input(&self, neuron_id: NeuronId) -> Num {
+        self.neurons[neuron_id.index()].i_ext
     }
 
     /// The synapses `firing_synapses` fire. Update the network state.
@@ -231,4 +261,16 @@ impl Network {
             syn.eff_d *= eff_d_decay; // decay
         }
     }
+}
+
+#[test]
+fn test_network() {
+    let mut network = Network::new();
+    let n1 = network.create_neuron(NeuronConfig::regular_spiking());
+    let n2 = network.create_neuron(NeuronConfig::regular_spiking());
+    assert_eq!(2, network.total_neurons());
+
+    let _syn1 = network.connect(n1, n2, 3, 1.0);
+    assert_eq!(0, network.get_neuron(n1).pre_synapses.len());
+    assert_eq!(1, network.get_neuron(n1).post_synapses.len());
 }

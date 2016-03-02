@@ -1,7 +1,7 @@
 extern crate izhikevich_neurons;
 extern crate gnuplot;
 
-use izhikevich_neurons::{NeuronConfig, NeuronId, TimeStep, Num, Simulator, Network, FireRecorder};
+use izhikevich_neurons::{NeuronConfig, NeuronId, Timestep, Num, Simulator, Network, FireRecorder};
 use gnuplot::{Figure, /*Caption,*/ Color, AxesCommon, PlotOption, AutoOption};
 
 fn main() {
@@ -16,9 +16,9 @@ fn main() {
     let mut fire_recorder = FireRecorder::new();
     let mut network = Network::new();
 
-    let input_neurons = network.n_neurons_of(9, |_| NeuronConfig::regular_spiking());
-    let middle_neurons = network.n_neurons_of(18, |_| NeuronConfig::regular_spiking());
-    let output_neurons = network.n_neurons_of(1, |_| NeuronConfig::regular_spiking());
+    let input_neurons = network.n_neurons_of(9, &mut|_| NeuronConfig::regular_spiking());
+    let middle_neurons = network.n_neurons_of(18, &mut|_| NeuronConfig::regular_spiking());
+    let output_neurons = network.n_neurons_of(1, &mut|_| NeuronConfig::regular_spiking());
 
     // let n1 = network.create_neuron(NeuronConfig::regular_spiking());
     // let n2 = network.create_neuron(NeuronConfig::regular_spiking());
@@ -28,7 +28,7 @@ fn main() {
 
     let pattern2: [u8; 9] = [0, 0, 1, 0, 1, 0, 1, 0, 0];
 
-    let mut external_inputs: Vec<(NeuronId, TimeStep, Num)> = Vec::new();
+    let mut external_inputs: Vec<(NeuronId, Timestep, Num)> = Vec::new();
 
     for (i, &v) in pattern1.iter().enumerate() {
         external_inputs.push((input_neurons[i],
