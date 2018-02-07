@@ -1,4 +1,4 @@
-use super::{NeuronConfig, Num};
+use {NeuronConfig, Num};
 
 /// At which potential the neuron's potential is reset to `c`.
 const RESET_THRESHOLD: Num = 30.0;
@@ -11,6 +11,22 @@ pub struct NeuronState {
 
     /// recovery variable
     u: Num,
+}
+
+/// Describes the activity of a neuron, i.e. if
+/// it is silent or if it fires an action potential.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum NeuronActivity {
+    /// The neuron fires an action potential
+    Fires,
+    /// The neuron is silent.
+    Silent,
+}
+
+impl NeuronActivity {
+    pub fn fires(&self) -> bool {
+        *self == NeuronActivity::Fires
+    }
 }
 
 #[inline(always)]
@@ -50,12 +66,12 @@ impl NeuronState {
 
     /// Calculate the new state after 1 ms.
     #[inline]
-    pub fn step_1ms(self, i_syn: Num, config: &NeuronConfig) -> (NeuronState, bool) {
+    pub fn step_1ms(self, i_syn: Num, config: &NeuronConfig) -> (NeuronState, NeuronActivity) {
         if self.v < RESET_THRESHOLD {
             (
                 // Split into two half-steps (0.5ms) to improve numerical stability
                 self.calc(0.5, i_syn, config).calc(0.5, i_syn, config),
-                false, // Neuron does not fire
+                NeuronActivity::Silent,
             )
         } else {
             (
@@ -63,7 +79,7 @@ impl NeuronState {
                     v: config.c,
                     u: self.u + config.d,
                 },
-                true, // Neuron fires
+                NeuronActivity::Fires,
             )
         }
     }

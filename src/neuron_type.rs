@@ -1,6 +1,6 @@
-use super::Num;
+use neuron_config::NeuronConfig;
 use closed01::Closed01;
-use super::neuron_config::NeuronConfig;
+use Num;
 
 /// Datastructure representing one of the broad neuron type.
 /// Can be directly converted into a NeuronConfig.

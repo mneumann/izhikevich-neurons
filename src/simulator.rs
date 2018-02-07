@@ -1,4 +1,4 @@
-use super::{Delay, Network, NeuronId, Num, SynapseId, Timestep};
+use {Delay, Network, NeuronId, Num, SynapseId, Timestep};
 
 // XXX: Make configurable
 const STDP_FIRE_RESET: Num = 0.1;

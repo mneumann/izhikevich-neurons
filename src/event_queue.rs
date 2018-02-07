@@ -1,4 +1,4 @@
-use super::{NeuronId, Num, Timestep};
+use {NeuronId, Num, Timestep};
 use std::collections::BinaryHeap;
 use std::cmp::Ordering;
 
