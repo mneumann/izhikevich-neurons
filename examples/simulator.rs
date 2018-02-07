@@ -1,7 +1,8 @@
 extern crate gnuplot;
 extern crate izhikevich_neurons;
 
-use izhikevich_neurons::{FireRecorder, Network, NeuronConfig, NeuronId, Num, Simulator, Timestep};
+use izhikevich_neurons::{FireRecorder, Network, NeuronConfig, NeuronId, Num, Simulator,
+                         SimulatorConfig, Timestep};
 use gnuplot::{AutoOption, AxesCommon, /*Caption,*/ Color, Figure, PlotOption};
 
 fn main() {
@@ -77,7 +78,12 @@ fn main() {
     //
 
     // let mut states: Vec<_> = PARAMS.iter().map(|_| Vec::new()).collect();
-    let mut sim = Simulator::new(network.max_delay() as usize);
+    let config = SimulatorConfig {
+        max_delay: network.max_delay(),
+        stdp_fire_reset: 0.1,
+        stdp_decay: 0.95,
+    };
+    let mut sim = Simulator::new(&config);
 
     while sim.current_time_step() <= 10_000 {
         // record current state

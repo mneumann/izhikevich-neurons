@@ -3,7 +3,7 @@ pub use neuron_state::NeuronState;
 pub use neuron_config::NeuronConfig;
 pub use neuron_type::NeuronType;
 pub use network::Network;
-pub use simulator::Simulator;
+pub use simulator::{Simulator, SimulatorConfig};
 
 pub mod neuron_state;
 pub mod neuron_config;
