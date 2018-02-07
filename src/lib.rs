@@ -66,5 +66,3 @@ impl FireRecorder {
         self.events.push((neuron_id, time_step));
     }
 }
-
-

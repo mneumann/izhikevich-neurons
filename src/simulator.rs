@@ -1,4 +1,4 @@
-use super::{Num, Timestep, Delay, SynapseId, NeuronId, Network};
+use super::{Delay, Network, NeuronId, Num, SynapseId, Timestep};
 
 // XXX: Make configurable
 const STDP_FIRE_RESET: Num = 0.1;
@@ -37,10 +37,11 @@ impl Simulator {
         self.current_time_step
     }
 
-    /// External input currents have to be set manually by calling `set_external_input`. 
+    /// External input currents have to be set manually by calling `set_external_input`.
 
     pub fn step<F>(&mut self, network: &mut Network, fired_callback: &mut F)
-        where F: FnMut(NeuronId, Timestep)
+    where
+        F: FnMut(NeuronId, Timestep),
     {
         let time_step = self.current_time_step;
 
@@ -54,15 +55,16 @@ impl Simulator {
             spikes.clear();
         }
 
-        network.update_state(STDP_FIRE_RESET,
-                             STDP_DECAY,
-                             &mut |syn_id, delay| {
-                                 self.future_spikes[timeslot_in_future(time_step, delay)]
-                                     .push(syn_id);
-                             },
-                             &mut |neuron_id| {
-                                 fired_callback(neuron_id, time_step);
-                             });
+        network.update_state(
+            STDP_FIRE_RESET,
+            STDP_DECAY,
+            &mut |syn_id, delay| {
+                self.future_spikes[timeslot_in_future(time_step, delay)].push(syn_id);
+            },
+            &mut |neuron_id| {
+                fired_callback(neuron_id, time_step);
+            },
+        );
 
         self.current_time_step += 1;
     }

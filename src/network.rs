@@ -1,6 +1,6 @@
 use super::neuron_state::NeuronState;
 use super::neuron_config::NeuronConfig;
-use super::{Num, SynapseId, NeuronId, Delay};
+use super::{Delay, NeuronId, Num, SynapseId};
 
 #[derive(Debug)]
 pub struct Neuron {
@@ -82,13 +82,18 @@ impl Network {
     }
 
     pub fn n_neurons_of<F>(&mut self, n: usize, f: &mut F) -> Vec<NeuronId>
-        where F: FnMut(usize) -> NeuronConfig
+    where
+        F: FnMut(usize) -> NeuronConfig,
     {
         (0..n).map(|i| self.create_neuron(f(i))).collect()
     }
 
     pub fn save_state(&self) -> Vec<NeuronState> {
-        self.neurons.iter().enumerate().map(|(_, n)| n.state).collect()
+        self.neurons
+            .iter()
+            .enumerate()
+            .map(|(_, n)| n.state)
+            .collect()
     }
 
     pub fn create_neuron(&mut self, config: NeuronConfig) -> NeuronId {
@@ -114,19 +119,23 @@ impl Network {
         self.neurons.len()
     }
 
-    pub fn connect_all(&mut self,
-                       from_neurons: &[NeuronId],
-                       to_neurons: &[NeuronId],
-                       delay: Delay,
-                       weight: Num) {
+    pub fn connect_all(
+        &mut self,
+        from_neurons: &[NeuronId],
+        to_neurons: &[NeuronId],
+        delay: Delay,
+        weight: Num,
+    ) {
         self.connect_all_with(from_neurons, to_neurons, &mut |_, _| Some((delay, weight)));
     }
 
-    pub fn connect_all_with<F>(&mut self,
-                               from_neurons: &[NeuronId],
-                               to_neurons: &[NeuronId],
-                               f: &mut F)
-        where F: FnMut(NeuronId, NeuronId) -> Option<(Delay, Num)>
+    pub fn connect_all_with<F>(
+        &mut self,
+        from_neurons: &[NeuronId],
+        to_neurons: &[NeuronId],
+        f: &mut F,
+    ) where
+        F: FnMut(NeuronId, NeuronId) -> Option<(Delay, Num)>,
     {
         for &from in from_neurons {
             for &to in to_neurons {
@@ -139,7 +148,6 @@ impl Network {
             }
         }
     }
-
 
     /// Reset the input currents of all neurons
 
@@ -179,12 +187,13 @@ impl Network {
         }
     }
 
-    pub fn connect(&mut self,
-                   pre_neuron: NeuronId,
-                   post_neuron: NeuronId,
-                   delay: Delay,
-                   weight: Num)
-                   -> SynapseId {
+    pub fn connect(
+        &mut self,
+        pre_neuron: NeuronId,
+        post_neuron: NeuronId,
+        delay: Delay,
+        weight: Num,
+    ) -> SynapseId {
         assert!(pre_neuron.index() < self.neurons.len());
         assert!(post_neuron.index() < self.neurons.len());
         assert!(delay > 0);
@@ -203,19 +212,25 @@ impl Network {
         let synapse_id = SynapseId::from(self.synapses.len());
 
         self.synapses.push(synapse);
-        self.neurons[pre_neuron.index()].post_synapses.push(synapse_id);
-        self.neurons[post_neuron.index()].pre_synapses.push(synapse_id);
+        self.neurons[pre_neuron.index()]
+            .post_synapses
+            .push(synapse_id);
+        self.neurons[post_neuron.index()]
+            .pre_synapses
+            .push(synapse_id);
 
         return synapse_id;
     }
 
-    pub fn update_state<E, F>(&mut self,
-                              stdp_fire_reset: Num,
-                              stdp_decay: Num,
-                              enqueue_future_spike: &mut E,
-                              fired_callback: &mut F)
-        where E: FnMut(SynapseId, Delay),
-              F: FnMut(NeuronId)
+    pub fn update_state<E, F>(
+        &mut self,
+        stdp_fire_reset: Num,
+        stdp_decay: Num,
+        enqueue_future_spike: &mut E,
+        fired_callback: &mut F,
+    ) where
+        E: FnMut(SynapseId, Delay),
+        F: FnMut(NeuronId),
     {
         for i in 0..self.neurons.len() {
             let fired = self.neurons[i].update_state(stdp_decay, stdp_fire_reset);
@@ -243,10 +258,12 @@ impl Network {
         }
     }
 
-    pub fn update_synapse_weights(&mut self,
-                                  min_syn_weight: Num,
-                                  max_syn_weight: Num,
-                                  eff_d_decay: Num) {
+    pub fn update_synapse_weights(
+        &mut self,
+        min_syn_weight: Num,
+        max_syn_weight: Num,
+        eff_d_decay: Num,
+    ) {
         for syn in self.synapses.iter_mut() {
             let new_weight = syn.weight + syn.eff_d;
 

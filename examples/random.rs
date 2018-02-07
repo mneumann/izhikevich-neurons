@@ -1,11 +1,11 @@
-extern crate izhikevich_neurons;
-extern crate gnuplot;
-extern crate rand;
 extern crate closed01;
+extern crate gnuplot;
+extern crate izhikevich_neurons;
+extern crate rand;
 
-use izhikevich_neurons::{NeuronConfig, Simulator, Network, FireRecorder};
-use izhikevich_neurons::event_queue::{EventQueue, Event};
-use gnuplot::{Figure, /* Caption, */ Color, AxesCommon, PlotOption, AutoOption};
+use izhikevich_neurons::{FireRecorder, Network, NeuronConfig, Simulator};
+use izhikevich_neurons::event_queue::{Event, EventQueue};
+use gnuplot::{AutoOption, AxesCommon, /* Caption, */ Color, Figure, PlotOption};
 use rand::Rng;
 use closed01::Closed01;
 
@@ -17,16 +17,15 @@ fn main() {
     let mut network = Network::new();
 
     let input_neurons = network.n_neurons_of(INPUTS, &mut |_| NeuronConfig::chattering());
-    let hidden_neurons = network.n_neurons_of(18,
-                                              &mut |_| {
-                                                  NeuronConfig::excitatory(Closed01::new(rng.gen()))
-                                              });
+    let hidden_neurons = network.n_neurons_of(18, &mut |_| {
+        NeuronConfig::excitatory(Closed01::new(rng.gen()))
+    });
     let _output_neurons = network.n_neurons_of(1, &mut |_| NeuronConfig::regular_spiking());
 
     for _ in 1..10 {
-        network.connect_all_with(&input_neurons,
-                                 &hidden_neurons,
-                                 &mut |_, _| Some((rng.gen_range(2, 56), rng.gen_range(0.0, 5.0))));
+        network.connect_all_with(&input_neurons, &hidden_neurons, &mut |_, _| {
+            Some((rng.gen_range(2, 56), rng.gen_range(0.0, 5.0)))
+        });
         // network.connect_all_with(&hidden_neurons,
         // &input_neurons,
         // &mut |_, _| Some((rng.gen_range(2, 56), rng.gen_range(0.0, 5.0))));
@@ -53,16 +52,14 @@ fn main() {
     }
 
     while sim.current_time_step() <= 10_000 {
-
         while let Some(ev) = external_inputs.pop_next_event_at(sim.current_time_step()) {
             let input = network.get_external_input(ev.neuron);
             network.set_external_input(ev.neuron, input + ev.weight);
         }
 
-        sim.step(&mut network,
-                 &mut |neuron_id, timestep| {
-                     fire_recorder.record(neuron_id, timestep);
-                 });
+        sim.step(&mut network, &mut |neuron_id, timestep| {
+            fire_recorder.record(neuron_id, timestep);
+        });
 
         if sim.current_time_step() % 500 == 0 {
             // Update synapse weights every 500 ms
@@ -74,17 +71,23 @@ fn main() {
         let mut fg = Figure::new();
         {
             let mut diag = fg.axes2d()
-                             .set_y_ticks(Some((AutoOption::Fix(1.0), 0)), &[], &[])
-                             .set_y_range(AutoOption::Fix(0.0),
-                                          AutoOption::Fix((network.total_neurons() - 1) as f64))
-                             .set_x_label("time (ms)", &[])
-                             .set_y_label("neuron id", &[]);
+                .set_y_ticks(Some((AutoOption::Fix(1.0), 0)), &[], &[])
+                .set_y_range(
+                    AutoOption::Fix(0.0),
+                    AutoOption::Fix((network.total_neurons() - 1) as f64),
+                )
+                .set_x_label("time (ms)", &[])
+                .set_y_label("neuron id", &[]);
 
-            diag.points(fire_recorder.events.iter().map(|&(_, t)| t),
-                        fire_recorder.events.iter().map(|&(i, _)| i.index()),
-                        &[PlotOption::PointSymbol('S'),
-                          Color("black"),
-                          PlotOption::PointSize(0.2)]);
+            diag.points(
+                fire_recorder.events.iter().map(|&(_, t)| t),
+                fire_recorder.events.iter().map(|&(i, _)| i.index()),
+                &[
+                    PlotOption::PointSymbol('S'),
+                    Color("black"),
+                    PlotOption::PointSize(0.2),
+                ],
+            );
         }
         fg.show();
     }

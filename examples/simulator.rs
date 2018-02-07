@@ -1,8 +1,8 @@
-extern crate izhikevich_neurons;
 extern crate gnuplot;
+extern crate izhikevich_neurons;
 
-use izhikevich_neurons::{NeuronConfig, NeuronId, Timestep, Num, Simulator, Network, FireRecorder};
-use gnuplot::{Figure, /*Caption,*/ Color, AxesCommon, PlotOption, AutoOption};
+use izhikevich_neurons::{FireRecorder, Network, NeuronConfig, NeuronId, Num, Simulator, Timestep};
+use gnuplot::{AutoOption, AxesCommon, /*Caption,*/ Color, Figure, PlotOption};
 
 fn main() {
     // const PARAMS : &'static [(&'static str, &'static str)] = &[
@@ -16,9 +16,9 @@ fn main() {
     let mut fire_recorder = FireRecorder::new();
     let mut network = Network::new();
 
-    let input_neurons = network.n_neurons_of(9, &mut|_| NeuronConfig::regular_spiking());
-    let middle_neurons = network.n_neurons_of(18, &mut|_| NeuronConfig::regular_spiking());
-    let output_neurons = network.n_neurons_of(1, &mut|_| NeuronConfig::regular_spiking());
+    let input_neurons = network.n_neurons_of(9, &mut |_| NeuronConfig::regular_spiking());
+    let middle_neurons = network.n_neurons_of(18, &mut |_| NeuronConfig::regular_spiking());
+    let output_neurons = network.n_neurons_of(1, &mut |_| NeuronConfig::regular_spiking());
 
     // let n1 = network.create_neuron(NeuronConfig::regular_spiking());
     // let n2 = network.create_neuron(NeuronConfig::regular_spiking());
@@ -31,79 +31,19 @@ fn main() {
     let mut external_inputs: Vec<(NeuronId, Timestep, Num)> = Vec::new();
 
     for (i, &v) in pattern1.iter().enumerate() {
-        external_inputs.push((input_neurons[i],
-                              0,
-                              if v == 0 {
-            0.0
-        } else {
-            4.0
-        }));
-        external_inputs.push((input_neurons[i],
-                              2000,
-                              if v == 0 {
-            0.0
-        } else {
-            4.0
-        }));
-        external_inputs.push((input_neurons[i],
-                              4000,
-                              if v == 0 {
-            0.0
-        } else {
-            4.0
-        }));
-        external_inputs.push((input_neurons[i],
-                              6000,
-                              if v == 0 {
-            0.0
-        } else {
-            4.0
-        }));
-        external_inputs.push((input_neurons[i],
-                              7000,
-                              if v == 0 {
-            0.0
-        } else {
-            4.0
-        }));
+        external_inputs.push((input_neurons[i], 0, if v == 0 { 0.0 } else { 4.0 }));
+        external_inputs.push((input_neurons[i], 2000, if v == 0 { 0.0 } else { 4.0 }));
+        external_inputs.push((input_neurons[i], 4000, if v == 0 { 0.0 } else { 4.0 }));
+        external_inputs.push((input_neurons[i], 6000, if v == 0 { 0.0 } else { 4.0 }));
+        external_inputs.push((input_neurons[i], 7000, if v == 0 { 0.0 } else { 4.0 }));
     }
 
     for (i, &v) in pattern2.iter().enumerate() {
-        external_inputs.push((input_neurons[i],
-                              1000,
-                              if v == 0 {
-            0.0
-        } else {
-            4.0
-        }));
-        external_inputs.push((input_neurons[i],
-                              3000,
-                              if v == 0 {
-            0.0
-        } else {
-            4.0
-        }));
-        external_inputs.push((input_neurons[i],
-                              5000,
-                              if v == 0 {
-            0.0
-        } else {
-            4.0
-        }));
-        external_inputs.push((input_neurons[i],
-                              6500,
-                              if v == 0 {
-            0.0
-        } else {
-            4.0
-        }));
-        external_inputs.push((input_neurons[i],
-                              7500,
-                              if v == 0 {
-            0.0
-        } else {
-            4.0
-        }));
+        external_inputs.push((input_neurons[i], 1000, if v == 0 { 0.0 } else { 4.0 }));
+        external_inputs.push((input_neurons[i], 3000, if v == 0 { 0.0 } else { 4.0 }));
+        external_inputs.push((input_neurons[i], 5000, if v == 0 { 0.0 } else { 4.0 }));
+        external_inputs.push((input_neurons[i], 6500, if v == 0 { 0.0 } else { 4.0 }));
+        external_inputs.push((input_neurons[i], 7500, if v == 0 { 0.0 } else { 4.0 }));
     }
 
     // let external_inputs: &[(NeuronId, TimeStep, Num)] = &[
@@ -153,10 +93,9 @@ fn main() {
             }
         }
 
-        sim.step(&mut network,
-                 &mut |neuron_id, timestep| {
-                     fire_recorder.record(neuron_id, timestep);
-                 });
+        sim.step(&mut network, &mut |neuron_id, timestep| {
+            fire_recorder.record(neuron_id, timestep);
+        });
 
         if sim.current_time_step() % 500 == 0 {
             // Update synapse weights every 10 ms
@@ -171,22 +110,26 @@ fn main() {
         let mut fg = Figure::new();
         {
             let mut diag = fg.axes2d()
-                             .set_y_ticks(Some((AutoOption::Fix(1.0), 0)), &[], &[])
-                             .set_y_range(AutoOption::Fix(0.0),
-                                          AutoOption::Fix((network.total_neurons() - 1) as f64))
-                             .set_x_label("time (ms)", &[])
-                             .set_y_label("neuron id", &[]);
+                .set_y_ticks(Some((AutoOption::Fix(1.0), 0)), &[], &[])
+                .set_y_range(
+                    AutoOption::Fix(0.0),
+                    AutoOption::Fix((network.total_neurons() - 1) as f64),
+                )
+                .set_x_label("time (ms)", &[])
+                .set_y_label("neuron id", &[]);
 
-            diag.points(fire_recorder.events.iter().map(|&(_, t)| t),
-                        fire_recorder.events.iter().map(|&(i, _)| i.index()),
-                        &[PlotOption::PointSymbol('S'),
-                          Color("black"),
-                          PlotOption::PointSize(0.2)]);
+            diag.points(
+                fire_recorder.events.iter().map(|&(_, t)| t),
+                fire_recorder.events.iter().map(|&(i, _)| i.index()),
+                &[
+                    PlotOption::PointSymbol('S'),
+                    Color("black"),
+                    PlotOption::PointSize(0.2),
+                ],
+            );
         }
         fg.show();
     }
-
-
 
     // {
     // let mut fg = Figure::new();
@@ -202,7 +145,6 @@ fn main() {
     // }
     //
 
-
     // let mut fg = Figure::new();
     // {
     // let mut diag = fg.axes2d().
@@ -214,5 +156,4 @@ fn main() {
     // }
     // fg.show();
     //
-
 }

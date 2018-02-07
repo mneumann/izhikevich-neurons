@@ -1,4 +1,4 @@
-use super::{Timestep, NeuronId, Num};
+use super::{NeuronId, Num, Timestep};
 use std::collections::BinaryHeap;
 use std::cmp::Ordering;
 
@@ -14,7 +14,7 @@ impl PartialEq for Event {
         self.at == other.at && self.neuron == other.neuron
     }
 }
-impl Eq for Event { }
+impl Eq for Event {}
 
 impl PartialOrd for Event {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
@@ -35,7 +35,7 @@ pub struct EventQueue {
 impl EventQueue {
     pub fn new() -> Self {
         EventQueue {
-            heap: BinaryHeap::new()
+            heap: BinaryHeap::new(),
         }
     }
 
@@ -45,7 +45,7 @@ impl EventQueue {
 
     pub fn pop_next_event_at(&mut self, at: Timestep) -> Option<Event> {
         match self.heap.peek() {
-            Some(ev) if at >= ev.at => { }
+            Some(ev) if at >= ev.at => {}
             _ => {
                 return None;
             }

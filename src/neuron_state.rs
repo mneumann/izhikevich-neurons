@@ -1,4 +1,4 @@
-use super::{Num, NeuronConfig};
+use super::{NeuronConfig, Num};
 
 /// At which potential the neuron's potential is reset to `c`.
 const RESET_THRESHOLD: Num = 30.0;
@@ -15,10 +15,7 @@ pub struct NeuronState {
 
 impl NeuronState {
     pub fn new() -> NeuronState {
-        NeuronState {
-            v: -70.0,
-            u: -14.0,
-        }
+        NeuronState { v: -70.0, u: -14.0 }
     }
     pub fn potential(&self) -> Num {
         if self.v < RESET_THRESHOLD {
@@ -56,14 +53,18 @@ impl NeuronState {
     #[inline]
     pub fn step_1ms(self, i_syn: Num, config: &NeuronConfig) -> (NeuronState, bool) {
         if self.v < RESET_THRESHOLD {
-            (self.calc(0.5, i_syn, config).calc(0.5, i_syn, config),
-             false)
+            (
+                self.calc(0.5, i_syn, config).calc(0.5, i_syn, config),
+                false,
+            )
         } else {
-            (NeuronState {
-                v: config.c,
-                u: self.u + config.d,
-            },
-             true)
+            (
+                NeuronState {
+                    v: config.c,
+                    u: self.u + config.d,
+                },
+                true,
+            )
         }
     }
 }
