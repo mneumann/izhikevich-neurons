@@ -8,4 +8,4 @@ closed01 = "0.4"
 
 [dev-dependencies]
 gnuplot = { git = "https://github.com/SiegeLord/RustGnuplot.git" }
-rand = "0.3"
+rand = "0.4"
