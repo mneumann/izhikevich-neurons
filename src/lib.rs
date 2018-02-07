@@ -4,6 +4,7 @@ pub use neuron_config::NeuronConfig;
 pub use neuron_type::NeuronType;
 pub use network::Network;
 pub use simulator::{Simulator, SimulatorConfig};
+pub use stdp::StdpConfig;
 
 pub mod neuron_state;
 pub mod neuron_config;
@@ -11,6 +12,7 @@ pub mod neuron_type;
 pub mod network;
 pub mod simulator;
 pub mod event_queue;
+pub mod stdp;
 
 /// We use this numerical type for all calculations.
 pub type Num = f32;

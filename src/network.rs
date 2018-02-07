@@ -1,6 +1,6 @@
 use neuron_state::{NeuronActivity, NeuronState};
 use neuron_config::NeuronConfig;
-use {Delay, NeuronId, Num, SynapseId};
+use {Delay, NeuronId, Num, StdpConfig, SynapseId};
 
 #[derive(Debug)]
 pub struct Neuron {
@@ -30,7 +30,7 @@ pub struct Neuron {
 
 impl Neuron {
     // Update the internal neuron state according to the synaptic input.
-    fn update_state(&mut self, stdp_decay: Num, stdp_fire_reset: Num) -> NeuronActivity {
+    fn update_state(&mut self, stdp_config: StdpConfig) -> NeuronActivity {
         // synaptic input
         let syn_i = self.i_ext + self.i_inp;
 
@@ -40,11 +40,11 @@ impl Neuron {
         match activity {
             NeuronActivity::Fires => {
                 // Reset the neurons STDP to a high value.
-                self.stdp = stdp_fire_reset;
+                self.stdp = stdp_config.fire_reset;
             }
             NeuronActivity::Silent => {
                 // decay STDP
-                self.stdp *= stdp_decay;
+                self.stdp *= stdp_config.decay;
             }
         }
 
@@ -226,8 +226,7 @@ impl Network {
 
     pub fn update_state<E, F>(
         &mut self,
-        stdp_fire_reset: Num,
-        stdp_decay: Num,
+        stdp_config: StdpConfig,
         enqueue_future_spike: &mut E,
         fired_callback: &mut F,
     ) where
@@ -235,7 +234,7 @@ impl Network {
         F: FnMut(NeuronId),
     {
         for i in 0..self.neurons.len() {
-            let activity = self.neurons[i].update_state(stdp_decay, stdp_fire_reset);
+            let activity = self.neurons[i].update_state(stdp_config);
 
             if activity.fires() {
                 let neuron = &self.neurons[i];

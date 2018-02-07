@@ -3,7 +3,7 @@ extern crate gnuplot;
 extern crate izhikevich_neurons;
 extern crate rand;
 
-use izhikevich_neurons::{FireRecorder, Network, NeuronConfig, Simulator, SimulatorConfig};
+use izhikevich_neurons::{FireRecorder, Network, NeuronConfig, Simulator, StdpConfig};
 use izhikevich_neurons::event_queue::{Event, EventQueue};
 use gnuplot::{AutoOption, AxesCommon, /* Caption, */ Color, Figure, PlotOption};
 use rand::Rng;
@@ -32,13 +32,7 @@ fn main() {
         //
     }
 
-    let config = SimulatorConfig {
-        max_delay: network.max_delay(),
-        stdp_fire_reset: 0.1,
-        stdp_decay: 0.95,
-    };
-
-    let mut sim = Simulator::new(&config);
+    let mut sim = Simulator::new(network.max_delay(), StdpConfig::default());
 
     let mut external_inputs = EventQueue::new();
 

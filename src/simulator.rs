@@ -1,18 +1,10 @@
-use {Delay, Network, NeuronId, Num, SynapseId, Timestep};
+use {Delay, Network, NeuronId, StdpConfig, SynapseId, Timestep};
 
 #[derive(Debug)]
 pub struct SimulatorConfig {
     /// The maximum delay a synapse can have. We use this value to size
     /// our `future_spikes` array.
     pub max_delay: Delay,
-
-    /// Spike Time Dependent Plasticity: Reset value after neuron fires.
-    /// Value, e.g. 0.1
-    pub stdp_fire_reset: Num,
-
-    /// Spike Time Dependent Plasticity: Decay for each simulator step.
-    /// Value, e.g.: 0.95
-    pub stdp_decay: Num,
 }
 
 pub struct Simulator {
@@ -26,18 +18,20 @@ pub struct Simulator {
     /// operator.
     max_delay_bitwise_and_mask: usize,
 
-    /// Spike Time Dependent Plasticity: Reset value after neuron fires.
-    /// Value, e.g. 0.1
-    stdp_fire_reset: Num,
-
-    /// Spike Time Dependent Plasticity: Decay for each simulator step.
-    /// Value, e.g.: 0.95
-    stdp_decay: Num,
+    /// Spike Time Dependent Plasticity configuration
+    stdp_config: StdpConfig,
 }
 
 impl Simulator {
-    pub fn new(config: &SimulatorConfig) -> Simulator {
-        let max_delay = config.max_delay as usize;
+    /// Creates a new Simulator.
+    ///
+    /// `max_delay`: The maximum delay a synapse can have. We use this value to size
+    /// our `future_spikes` array.
+    ///
+    /// `stdp_config`: STDP configuration
+    ///
+    pub fn new(max_delay: Delay, stdp_config: StdpConfig) -> Simulator {
+        let max_delay = max_delay as usize;
         assert!(max_delay > 1);
         let next_power_of_two = max_delay.checked_next_power_of_two().unwrap();
         assert!(next_power_of_two >= max_delay);
@@ -47,8 +41,7 @@ impl Simulator {
             current_time_step: 0,
             future_spikes: (0..next_power_of_two).map(|_| Vec::new()).collect(),
             max_delay_bitwise_and_mask,
-            stdp_fire_reset: config.stdp_fire_reset,
-            stdp_decay: config.stdp_decay,
+            stdp_config,
         }
     }
 
@@ -86,8 +79,7 @@ impl Simulator {
         }
 
         network.update_state(
-            self.stdp_fire_reset,
-            self.stdp_decay,
+            self.stdp_config,
             &mut |syn_id, delay| {
                 let idx = self.timeslot_in_future(time_step, delay);
                 self.future_spikes[idx].push(syn_id);
