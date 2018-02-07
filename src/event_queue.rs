@@ -23,6 +23,10 @@ impl PartialOrd for Event {
 }
 
 impl Ord for Event {
+    // The `cmp` function is required for the sort order in the
+    // BinaryHeap. As `std::collections::BinaryHeap` implements
+    // a max-heap, but we require a min-heap, we have to use the
+    // `reverse` ordering here.
     fn cmp(&self, other: &Self) -> Ordering {
         self.at.cmp(&other.at).reverse()
     }
@@ -43,18 +47,21 @@ impl EventQueue {
         self.heap.push(ev);
     }
 
+    // Returns the next event that has a timestamp of `at`. Returns
+    // None, if the event queue is either empty, or if there is no
+    // event for timestamp `at`. Panics if the top-most event in the
+    // event queue is before `at`.
     pub fn pop_next_event_at(&mut self, at: Timestep) -> Option<Event> {
         match self.heap.peek() {
-            Some(ev) if at >= ev.at => {}
+            Some(ev) if ev.at <= at => {
+                // fall-through, because of the borrow checker
+            }
             _ => {
                 return None;
             }
         }
         let ev = self.heap.pop().unwrap();
-        if at > ev.at {
-            panic!("old event found");
-        }
-        debug_assert!(ev.at == at);
+        assert!(ev.at == at, "old event found");
         return Some(ev);
     }
 }
