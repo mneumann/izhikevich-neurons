@@ -53,8 +53,9 @@ impl NeuronState {
     pub fn step_1ms(self, i_syn: Num, config: &NeuronConfig) -> (NeuronState, bool) {
         if self.v < RESET_THRESHOLD {
             (
+                // Split into two half-steps (0.5ms) to improve numerical stability
                 self.calc(0.5, i_syn, config).calc(0.5, i_syn, config),
-                false,
+                false, // Neuron does not fire
             )
         } else {
             (
@@ -62,7 +63,7 @@ impl NeuronState {
                     v: config.c,
                     u: self.u + config.d,
                 },
-                true,
+                true, // Neuron fires
             )
         }
     }
