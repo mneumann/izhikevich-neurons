@@ -9,28 +9,35 @@ pub struct Simulator {
 
     // We use a cyclic buffer with (time_step % max_delay) as index into the futures_spike array
     future_spikes: Vec<Vec<SynapseId>>,
-}
 
-// NOTE: This must be a power of two
-const MAX_DELAY: usize = 64;
-
-#[inline(always)]
-fn timeslot(at: Timestep) -> usize {
-    (at & (MAX_DELAY - 1)) as usize
-}
-
-#[inline(always)]
-fn timeslot_in_future(at: Timestep, delay: Delay) -> usize {
-    timeslot(at + delay as usize)
+    /// The next power of two of `max_delay` - 1. This is used as
+    /// bit-wise AND mask, to avoid using the expensive modulo (%)
+    /// operator.
+    max_delay_bitwise_and_mask: usize,
 }
 
 impl Simulator {
     pub fn new(max_delay: usize) -> Simulator {
-        assert!(max_delay < MAX_DELAY);
+        assert!(max_delay > 1);
+        let next_power_of_two = max_delay.checked_next_power_of_two().unwrap();
+        assert!(next_power_of_two >= max_delay);
+        let max_delay_bitwise_and_mask = next_power_of_two - 1;
+
         Simulator {
             current_time_step: 0,
-            future_spikes: (0..MAX_DELAY).map(|_| Vec::new()).collect(),
+            future_spikes: (0..next_power_of_two).map(|_| Vec::new()).collect(),
+            max_delay_bitwise_and_mask,
         }
+    }
+
+    #[inline(always)]
+    fn timeslot(&self, at: Timestep) -> usize {
+        (at as usize) & self.max_delay_bitwise_and_mask
+    }
+
+    #[inline(always)]
+    fn timeslot_in_future(&self, at: Timestep, delay: Delay) -> usize {
+        self.timeslot(at + delay as usize)
     }
 
     pub fn current_time_step(&self) -> Timestep {
@@ -50,7 +57,8 @@ impl Simulator {
 
         // get all synapse input
         {
-            let spikes = &mut self.future_spikes[timeslot(time_step)];
+            let idx = self.timeslot(time_step);
+            let spikes = &mut self.future_spikes[idx];
             network.process_firing_synapses(spikes);
             spikes.clear();
         }
@@ -59,7 +67,8 @@ impl Simulator {
             STDP_FIRE_RESET,
             STDP_DECAY,
             &mut |syn_id, delay| {
-                self.future_spikes[timeslot_in_future(time_step, delay)].push(syn_id);
+                let idx = self.timeslot_in_future(time_step, delay);
+                self.future_spikes[idx].push(syn_id);
             },
             &mut |neuron_id| {
                 fired_callback(neuron_id, time_step);
