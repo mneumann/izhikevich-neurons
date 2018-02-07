@@ -13,23 +13,6 @@ pub struct NeuronState {
     u: Num,
 }
 
-impl NeuronState {
-    pub fn new() -> NeuronState {
-        NeuronState { v: -70.0, u: -14.0 }
-    }
-    pub fn potential(&self) -> Num {
-        if self.v < RESET_THRESHOLD {
-            self.v
-        } else {
-            RESET_THRESHOLD
-        }
-    }
-
-    pub fn recovery(&self) -> Num {
-        self.u
-    }
-}
-
 #[inline(always)]
 fn dv(u: Num, v: Num, i_syn: Num) -> Num {
     (0.04 * v + 5.0) * v + 140.0 - u + i_syn
@@ -41,6 +24,22 @@ fn du(u: Num, v: Num, a: Num, b: Num) -> Num {
 }
 
 impl NeuronState {
+    pub fn new() -> NeuronState {
+        NeuronState { v: -70.0, u: -14.0 }
+    }
+
+    pub fn potential(&self) -> Num {
+        if self.v < RESET_THRESHOLD {
+            self.v
+        } else {
+            RESET_THRESHOLD
+        }
+    }
+
+    pub fn recovery(&self) -> Num {
+        self.u
+    }
+
     #[inline(always)]
     fn calc(self, dt: Num, i_syn: Num, config: &NeuronConfig) -> NeuronState {
         NeuronState {
