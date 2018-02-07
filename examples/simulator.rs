@@ -109,7 +109,7 @@ fn main() {
         // println!("{:?}", fire_recorder);
         let mut fg = Figure::new();
         {
-            let mut diag = fg.axes2d()
+            let diag = fg.axes2d()
                 .set_y_ticks(Some((AutoOption::Fix(1.0), 0)), &[], &[])
                 .set_y_range(
                     AutoOption::Fix(0.0),
