@@ -3,11 +3,11 @@ extern crate gnuplot;
 extern crate izhikevich_neurons;
 extern crate rand;
 
-use izhikevich_neurons::{FireRecorder, Network, NeuronConfig, Simulator, StdpConfig};
-use izhikevich_neurons::event_queue::{Event, EventQueue};
-use gnuplot::{AutoOption, AxesCommon, /* Caption, */ Color, Figure, PlotOption};
-use rand::Rng;
 use closed01::Closed01;
+use gnuplot::{AutoOption, AxesCommon, /* Caption, */ Color, Figure, PlotOption};
+use izhikevich_neurons::event_queue::{Event, EventQueue};
+use izhikevich_neurons::{FireRecorder, Network, NeuronConfig, Simulator, StdpConfig};
+use rand::Rng;
 
 const INPUTS: usize = 9;
 

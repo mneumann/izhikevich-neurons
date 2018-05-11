@@ -1,5 +1,5 @@
-use closed01::Closed01;
 use Num;
+use closed01::Closed01;
 
 /// A neuron's configuration parameters.
 #[derive(Debug)]

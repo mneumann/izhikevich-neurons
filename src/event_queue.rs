@@ -1,6 +1,6 @@
-use {NeuronId, Num, Timestep};
-use std::collections::BinaryHeap;
 use std::cmp::Ordering;
+use std::collections::BinaryHeap;
+use {NeuronId, Num, Timestep};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Event {

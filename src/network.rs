@@ -1,5 +1,5 @@
-use neuron_state::{NeuronActivity, NeuronState};
 use neuron_config::NeuronConfig;
+use neuron_state::{NeuronActivity, NeuronState};
 use {Delay, NeuronId, Num, StdpConfig, SynapseId};
 
 #[derive(Debug)]
