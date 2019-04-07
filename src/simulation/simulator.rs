@@ -66,7 +66,6 @@ impl Simulator {
 
         // get all synapse input
         {
-            // DRY
             let idx = self.timeslot(time_step);
             let spikes = &mut self.future_spikes[idx];
 
