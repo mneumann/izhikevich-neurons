@@ -1,6 +1,6 @@
 use crate::model::StdpConfig;
 use crate::network::{Network, NeuronId, SynapseDelay, SynapseId};
-use crate::simulation::Timestep;
+use crate::simulation::{EventRecorder, Timestep};
 
 pub struct Simulator {
     current_time_step: Timestep,
@@ -55,10 +55,7 @@ impl Simulator {
     }
 
     /// External input currents have to be set manually by calling `set_external_input`.
-    pub fn step<F>(&mut self, network: &mut Network, fired_callback: &mut F)
-    where
-        F: FnMut(NeuronId, Timestep),
-    {
+    pub fn step(&mut self, network: &mut Network, event_recorder: &mut impl EventRecorder) {
         let time_step = self.current_time_step;
 
         // Clear all input currents
@@ -78,7 +75,7 @@ impl Simulator {
 
             if activity.fires() {
                 let neuron_id = NeuronId::from(i);
-                fired_callback(neuron_id, time_step);
+                event_recorder.record_fire(neuron_id, time_step);
 
                 for &syn_id in network.neurons[i].post_synapses.iter() {
                     let synapse_delay = network.synapses[syn_id.index()].synapse_delay;

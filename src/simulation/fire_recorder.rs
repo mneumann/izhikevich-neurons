@@ -1,5 +1,5 @@
 use crate::network::NeuronId;
-use crate::simulation::Timestep;
+use crate::simulation::{EventRecorder, Timestep};
 
 #[derive(Debug)]
 pub struct FireRecorder {
@@ -10,8 +10,10 @@ impl FireRecorder {
     pub fn new() -> FireRecorder {
         FireRecorder { events: Vec::new() }
     }
+}
 
-    pub fn record(&mut self, neuron_id: NeuronId, time_step: Timestep) {
+impl EventRecorder for FireRecorder {
+    fn record_fire(&mut self, neuron_id: NeuronId, time_step: Timestep) {
         self.events.push((neuron_id, time_step));
     }
 }

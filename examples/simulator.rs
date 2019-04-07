@@ -81,9 +81,7 @@ fn main() {
             }
         }
 
-        sim.step(&mut network, &mut |neuron_id, timestep| {
-            fire_recorder.record(neuron_id, timestep);
-        });
+        sim.step(&mut network, &mut fire_recorder);
 
         if sim.current_time_step() % 500 == 0 {
             // Update synapse weights every 10 ms
