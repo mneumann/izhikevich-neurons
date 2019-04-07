@@ -1,7 +1,7 @@
-use crate::Num;
-use std::cmp::Ordering;
 use crate::network::NeuronId;
 use crate::simulation::Timestep;
+use crate::Num;
+use std::cmp::Ordering;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Event {

@@ -1,5 +1,5 @@
+use crate::simulation::{Event, Timestep};
 use std::collections::BinaryHeap;
-use crate::simulation::{Timestep, Event};
 
 pub struct EventQueue {
     heap: BinaryHeap<Event>,

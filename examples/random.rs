@@ -1,45 +1,43 @@
-extern crate closed01;
-extern crate gnuplot;
-extern crate izhikevich_neurons;
-extern crate rand;
-
-use closed01::Closed01;
 use gnuplot::{AutoOption, AxesCommon, /* Caption, */ Color, Figure, PlotOption};
-use izhikevich_neurons::event_queue::{Event, EventQueue};
-use izhikevich_neurons::{FireRecorder, Network, NeuronConfig, Simulator, StdpConfig};
-use rand::Rng;
+use izhikevich_neurons::model::{NeuronConfig, StdpConfig};
+use izhikevich_neurons::network::{NetworkBuilder, SynapseDelay};
+use izhikevich_neurons::simulation::{Event, EventQueue, FireRecorder, Simulator};
+use izhikevich_neurons::Closed01;
+use rand::{seq::SliceRandom, Rng};
 
 const INPUTS: usize = 9;
 
 fn main() {
     let mut rng = rand::thread_rng();
     let mut fire_recorder = FireRecorder::new();
-    let mut network = Network::new();
+    let mut builder = NetworkBuilder::new();
 
-    let input_neurons = network.n_neurons_of(INPUTS, &mut |_| NeuronConfig::chattering());
-    let hidden_neurons = network.n_neurons_of(18, &mut |_| {
+    let input_neurons = builder.create_n_neurons_with(INPUTS, &mut |_| NeuronConfig::chattering());
+    let hidden_neurons = builder.create_n_neurons_with(18, &mut |_| {
         NeuronConfig::excitatory(Closed01::new(rng.gen()))
     });
-    let _output_neurons = network.n_neurons_of(1, &mut |_| NeuronConfig::regular_spiking());
+    let _output_neurons =
+        builder.create_n_neurons_with(1, &mut |_| NeuronConfig::regular_spiking());
 
     for _ in 1..10 {
-        network.connect_all_with(&input_neurons, &hidden_neurons, &mut |_, _| {
-            Some((rng.gen_range(2, 56), rng.gen_range(0.0, 5.0)))
+        builder.connect_all_with(&input_neurons, &hidden_neurons, &mut |_, _| {
+            Some((
+                SynapseDelay::new(rng.gen_range(2, 56)),
+                rng.gen_range(0.0, 5.0),
+            ))
         });
-        // network.connect_all_with(&hidden_neurons,
-        // &input_neurons,
-        // &mut |_, _| Some((rng.gen_range(2, 56), rng.gen_range(0.0, 5.0))));
-        //
     }
 
-    let mut sim = Simulator::new(network.max_delay(), StdpConfig::default());
+    let mut network = builder.into_network();
+
+    let mut sim = Simulator::new(network.max_synapse_delay(), StdpConfig::default());
 
     let mut external_inputs = EventQueue::new();
 
     for _ in 1..2000 {
         let event = Event {
             at: rng.gen_range(1, 10_000),
-            neuron: *rng.choose(&input_neurons).unwrap(),
+            neuron: input_neurons.choose(&mut rng).cloned().unwrap(),
             weight: rng.gen_range(0.0, 4.0),
         };
         let event_down = Event {

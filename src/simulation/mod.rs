@@ -6,5 +6,6 @@ pub mod simulator;
 pub type Timestep = usize;
 
 pub use event::Event;
+pub use event_queue::EventQueue;
 pub use fire_recorder::FireRecorder;
 pub use simulator::Simulator;
