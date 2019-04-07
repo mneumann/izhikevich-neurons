@@ -1,6 +1,8 @@
+use crate::network::NeuronId;
+use crate::simulation::Timestep;
+use crate::Num;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
-use {NeuronId, Num, Timestep};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Event {

@@ -1,11 +1,6 @@
-use {Delay, Network, NeuronId, StdpConfig, SynapseId, Timestep};
-
-#[derive(Debug)]
-pub struct SimulatorConfig {
-    /// The maximum delay a synapse can have. We use this value to size
-    /// our `future_spikes` array.
-    pub max_delay: Delay,
-}
+use crate::model::StdpConfig;
+use crate::network::{Network, NeuronId, SynapseDelay, SynapseId};
+use crate::simulation::Timestep;
 
 pub struct Simulator {
     current_time_step: Timestep,
@@ -30,8 +25,8 @@ impl Simulator {
     ///
     /// `stdp_config`: STDP configuration
     ///
-    pub fn new(max_delay: Delay, stdp_config: StdpConfig) -> Simulator {
-        let max_delay = max_delay as usize;
+    pub fn new(max_delay: SynapseDelay, stdp_config: StdpConfig) -> Simulator {
+        let max_delay = max_delay.get() as usize;
         assert!(max_delay > 1);
         let next_power_of_two = max_delay.checked_next_power_of_two().unwrap();
         assert!(next_power_of_two >= max_delay);
@@ -51,8 +46,8 @@ impl Simulator {
     }
 
     #[inline(always)]
-    fn timeslot_in_future(&self, at: Timestep, delay: Delay) -> usize {
-        self.timeslot(at + delay as usize)
+    fn timeslot_in_future(&self, at: Timestep, synapse_delay: SynapseDelay) -> usize {
+        self.timeslot(at + synapse_delay.get() as usize)
     }
 
     pub fn current_time_step(&self) -> Timestep {
@@ -60,7 +55,6 @@ impl Simulator {
     }
 
     /// External input currents have to be set manually by calling `set_external_input`.
-
     pub fn step<F>(&mut self, network: &mut Network, fired_callback: &mut F)
     where
         F: FnMut(NeuronId, Timestep),
@@ -72,22 +66,30 @@ impl Simulator {
 
         // get all synapse input
         {
+            // DRY
             let idx = self.timeslot(time_step);
             let spikes = &mut self.future_spikes[idx];
+
             network.process_firing_synapses(spikes);
             spikes.clear();
         }
 
-        network.update_state(
-            self.stdp_config,
-            &mut |syn_id, delay| {
-                let idx = self.timeslot_in_future(time_step, delay);
-                self.future_spikes[idx].push(syn_id);
-            },
-            &mut |neuron_id| {
+        for i in 0..network.neurons.len() {
+            let activity = network.neurons[i].update_state(self.stdp_config);
+
+            if activity.fires() {
+                let neuron_id = NeuronId::from(i);
                 fired_callback(neuron_id, time_step);
-            },
-        );
+
+                for &syn_id in network.neurons[i].post_synapses.iter() {
+                    let synapse_delay = network.synapses[syn_id.index()].synapse_delay;
+                    let idx = self.timeslot_in_future(time_step, synapse_delay);
+                    self.future_spikes[idx].push(syn_id);
+                }
+
+                network.excite_all_pre_synapses_of_neuron(neuron_id);
+            }
+        }
 
         self.current_time_step += 1;
     }

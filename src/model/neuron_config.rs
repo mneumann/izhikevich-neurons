@@ -1,11 +1,11 @@
-use Num;
+use crate::Num;
 use closed01::Closed01;
 
 /// A neuron's configuration parameters.
 #[derive(Debug)]
 pub struct NeuronConfig {
     /// Rate of recovery.
-    pub a: Num,
+    pub(crate) a: Num,
 
     /// Sensitivity of recovery variable `u` to the membrane potential `v`.
     pub b: Num,

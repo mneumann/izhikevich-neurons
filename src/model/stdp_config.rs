@@ -1,6 +1,6 @@
-use Num;
+use crate::Num;
 
-/// Spike-Time Dependent Plasticity (STDP) configuration
+/// Configuration parameters for Spike-Time Dependent Plasticity (STDP)
 #[derive(Debug, Copy, Clone)]
 pub struct StdpConfig {
     /// By how much the `stdp` value of each neuron decays during every

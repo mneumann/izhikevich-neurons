@@ -1,9 +1,8 @@
-extern crate gnuplot;
-extern crate izhikevich_neurons;
-
 use gnuplot::{AutoOption, AxesCommon, /*Caption,*/ Color, Figure, PlotOption};
-use izhikevich_neurons::{FireRecorder, Network, NeuronConfig, NeuronId, Num, Simulator,
-                         StdpConfig, Timestep};
+use izhikevich_neurons::model::{NeuronConfig, StdpConfig};
+use izhikevich_neurons::network::{NetworkBuilder, NeuronId, SynapseDelay};
+use izhikevich_neurons::simulation::{FireRecorder, Simulator, Timestep};
+use izhikevich_neurons::Num;
 
 fn main() {
     // const PARAMS : &'static [(&'static str, &'static str)] = &[
@@ -15,15 +14,38 @@ fn main() {
     //
 
     let mut fire_recorder = FireRecorder::new();
-    let mut network = Network::new();
+    let mut builder = NetworkBuilder::new();
 
-    let input_neurons = network.n_neurons_of(9, &mut |_| NeuronConfig::regular_spiking());
-    let middle_neurons = network.n_neurons_of(18, &mut |_| NeuronConfig::regular_spiking());
-    let output_neurons = network.n_neurons_of(1, &mut |_| NeuronConfig::regular_spiking());
+    let input_neurons = builder.create_n_neurons_with(9, &mut |_| NeuronConfig::regular_spiking());
+    let middle_neurons =
+        builder.create_n_neurons_with(18, &mut |_| NeuronConfig::regular_spiking());
+    let output_neurons = builder.create_n_neurons_with(1, &mut |_| NeuronConfig::regular_spiking());
 
-    // let n1 = network.create_neuron(NeuronConfig::regular_spiking());
-    // let n2 = network.create_neuron(NeuronConfig::regular_spiking());
-    // let n3 = network.create_neuron(NeuronConfig::regular_spiking());
+    // connect every input neuron with every output neuron.
+    builder.connect_all(
+        &input_neurons[..],
+        &middle_neurons[..],
+        SynapseDelay::new(2),
+        2.0,
+    );
+    builder.connect_all(
+        &input_neurons[..],
+        &middle_neurons[..],
+        SynapseDelay::new(3),
+        2.0,
+    );
+    builder.connect_all(
+        &input_neurons[..],
+        &middle_neurons[..],
+        SynapseDelay::new(5),
+        2.0,
+    );
+    builder.connect_all(
+        &middle_neurons[..],
+        &output_neurons[..],
+        SynapseDelay::new(1),
+        1.0,
+    );
 
     let pattern1: [u8; 9] = [0, 0, 0, 1, 1, 1, 0, 0, 0];
 
@@ -47,45 +69,10 @@ fn main() {
         external_inputs.push((input_neurons[i], 7500, if v == 0 { 0.0 } else { 4.0 }));
     }
 
-    // let external_inputs: &[(NeuronId, TimeStep, Num)] = &[
-    // (n1, 200, 7.0),
-    // (n1, 701, 0.0)
-    // ];
-    //
-
-    // connect every input neuron with every output neuron.
-    network.connect_all(&input_neurons[..], &middle_neurons[..], 2, 2.0);
-    network.connect_all(&input_neurons[..], &middle_neurons[..], 3, 2.0);
-    network.connect_all(&input_neurons[..], &middle_neurons[..], 5, 2.0);
-
-    network.connect_all(&middle_neurons[..], &output_neurons[..], 1, 1.0);
-
-    // for i in 0..4 {
-    // for j in 0..4 {
-    // if i != j {
-    // network.connect(output_neurons[i], output_neurons[j], 2, -70.0);
-    // }
-    // }
-    // }
-    //
-
-    // let _ = network.connect(n1, n2, 10, 7.0);
-    // let _ = network.connect(n1, n2, 5, 7.0);
-    // let _ = network.connect(n1, n2, 2, 7.0);
-    // let _ = network.connect(n1, n2, 2, 7.0);
-    // let _ = network.connect(n2, n2, 20, 7.0);
-    // let _ = network.connect(n2, n2, 20, 7.0);
-    //
-
-    // let mut states: Vec<_> = PARAMS.iter().map(|_| Vec::new()).collect();
-    let mut sim = Simulator::new(network.max_delay(), StdpConfig::default());
+    let mut network = builder.into_network();
+    let mut sim = Simulator::new(network.max_synapse_delay(), StdpConfig::default());
 
     while sim.current_time_step() <= 10_000 {
-        // record current state
-        // for (i, &neuron_state) in network.save_state().iter().enumerate() {
-        // states[i].push(neuron_state);
-        // }
-
         // set external inputs
 
         for &(neuron_id, at, current) in external_inputs.iter() {
@@ -110,7 +97,8 @@ fn main() {
         // println!("{:?}", fire_recorder);
         let mut fg = Figure::new();
         {
-            let diag = fg.axes2d()
+            let diag = fg
+                .axes2d()
                 .set_y_ticks(Some((AutoOption::Fix(1.0), 0)), &[], &[])
                 .set_y_range(
                     AutoOption::Fix(0.0),

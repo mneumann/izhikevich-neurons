@@ -54,8 +54,7 @@ fn main() {
 
     while sim.current_time_step() <= 10_000 {
         while let Some(ev) = external_inputs.pop_next_event_at(sim.current_time_step()) {
-            let input = network.get_external_input(ev.neuron);
-            network.set_external_input(ev.neuron, input + ev.weight);
+            network.increase_external_input(ev.neuron, ev.weight);
         }
 
         sim.step(&mut network, &mut |neuron_id, timestep| {
@@ -71,7 +70,8 @@ fn main() {
     {
         let mut fg = Figure::new();
         {
-            let diag = fg.axes2d()
+            let diag = fg
+                .axes2d()
                 .set_y_ticks(Some((AutoOption::Fix(1.0), 0)), &[], &[])
                 .set_y_range(
                     AutoOption::Fix(0.0),

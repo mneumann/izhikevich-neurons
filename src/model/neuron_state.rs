@@ -1,6 +1,7 @@
-use {NeuronConfig, Num};
+use crate::model::{NeuronActivity, NeuronConfig};
+use crate::Num;
 
-/// At which potential the neuron's potential is reset to `c`.
+/// Threshold at which the neuron's potential is reset to `c`.
 const RESET_THRESHOLD: Num = 30.0;
 
 /// Represents the state of a neuron.
@@ -11,22 +12,6 @@ pub struct NeuronState {
 
     /// recovery variable
     u: Num,
-}
-
-/// Describes the activity of a neuron, i.e. if
-/// it is silent or if it fires an action potential.
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum NeuronActivity {
-    /// The neuron fires an action potential
-    Fires,
-    /// The neuron is silent.
-    Silent,
-}
-
-impl NeuronActivity {
-    pub fn fires(&self) -> bool {
-        *self == NeuronActivity::Fires
-    }
 }
 
 #[inline(always)]
