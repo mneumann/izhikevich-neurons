@@ -1,12 +1,11 @@
 use crate::model::NeuronConfig;
-use crate::Num;
-use closed01::Closed01;
+use crate::Closed01;
 
 /// Datastructure representing one of the broad neuron types.
 /// Can be directly converted into a NeuronConfig.
 pub enum NeuronType {
-    Excitatory(Closed01<Num>),
-    Inhibitory(Closed01<Num>),
+    Excitatory(Closed01),
+    Inhibitory(Closed01),
     RegularSpiking,
     Chattering,
 }

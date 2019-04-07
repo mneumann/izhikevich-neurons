@@ -1,5 +1,4 @@
-use crate::Num;
-use closed01::Closed01;
+use crate::{Closed01, Num};
 
 /// A neuron's configuration parameters.
 #[derive(Debug)]
@@ -20,7 +19,7 @@ pub struct NeuronConfig {
 impl NeuronConfig {
     /// Generates an excitatory neuron configuration according to Izhikevich's paper [reentry]
     /// where `r` is a random variable uniformly distributed in [0, 1].
-    pub fn excitatory(r: Closed01<Num>) -> NeuronConfig {
+    pub fn excitatory(r: Closed01) -> NeuronConfig {
         let r = r.get();
         let r2 = r * r;
         NeuronConfig {
@@ -31,7 +30,7 @@ impl NeuronConfig {
         }
     }
 
-    pub fn inhibitory(r: Closed01<Num>) -> NeuronConfig {
+    pub fn inhibitory(r: Closed01) -> NeuronConfig {
         let r = r.get();
         NeuronConfig {
             a: 0.02 + 0.08 * r,
